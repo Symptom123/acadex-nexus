@@ -7,8 +7,11 @@ import { motion, AnimatePresence } from "framer-motion";
 
 interface NavItem {
   label: string;
-  path: string;
+  path?: string;
+  id?: string;
   icon: React.ComponentType<{ className?: string }>;
+  onClick?: () => void;
+  active?: boolean;
 }
 
 interface DashboardLayoutProps {
@@ -22,6 +25,48 @@ const DashboardLayout = ({ children, title, role, navItems }: DashboardLayoutPro
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  const renderNavItem = (item: NavItem) => {
+    const isActive = item.active !== undefined ? item.active : (item.path ? location.pathname === item.path : false);
+    const content = (
+      <>
+        <item.icon className="h-4 w-4" />
+        {item.label}
+      </>
+    );
+
+    const baseClass = `flex items-center gap-3 px-4 py-3 rounded-xl text-[13px] font-medium transition-all duration-200 ${
+      isActive
+        ? "bg-foreground text-primary-foreground shadow-md"
+        : "text-muted-foreground hover:text-foreground hover:bg-secondary/80"
+    }`;
+
+    if (item.path) {
+      return (
+        <Link
+          key={item.path}
+          to={item.path}
+          className={baseClass}
+          onClick={() => setMobileOpen(false)}
+        >
+          {content}
+        </Link>
+      );
+    }
+
+    return (
+      <button
+        key={item.id || item.label}
+        onClick={() => {
+          item.onClick?.();
+          setMobileOpen(false);
+        }}
+        className={`${baseClass} w-full text-left`}
+      >
+        {content}
+      </button>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-background flex">
       {/* Desktop Sidebar */}
@@ -32,23 +77,7 @@ const DashboardLayout = ({ children, title, role, navItems }: DashboardLayoutPro
         </div>
 
         <nav className="flex-1 space-y-1">
-          {navItems.map((item) => {
-            const active = location.pathname === item.path;
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-[13px] font-medium transition-all duration-200 ${
-                  active
-                    ? "bg-foreground text-primary-foreground shadow-md"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/80"
-                }`}
-              >
-                <item.icon className="h-4 w-4" />
-                {item.label}
-              </Link>
-            );
-          })}
+          {navItems.map(renderNavItem)}
         </nav>
 
         <div className="pt-6 border-t border-border">
@@ -78,24 +107,7 @@ const DashboardLayout = ({ children, title, role, navItems }: DashboardLayoutPro
               className="lg:hidden border-b border-border bg-card overflow-hidden"
             >
               <div className="p-4 space-y-1">
-                {navItems.map((item) => {
-                  const active = location.pathname === item.path;
-                  return (
-                    <Link
-                      key={item.path}
-                      to={item.path}
-                      onClick={() => setMobileOpen(false)}
-                      className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
-                        active
-                          ? "bg-foreground text-primary-foreground"
-                          : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-                      }`}
-                    >
-                      <item.icon className="h-4 w-4" />
-                      {item.label}
-                    </Link>
-                  );
-                })}
+                {navItems.map(renderNavItem)}
                 <Link to="/login" onClick={() => setMobileOpen(false)}>
                   <Button variant="ghost" size="sm" className="w-full justify-start text-muted-foreground mt-2">
                     <LogOut className="mr-2 h-4 w-4" /> Sign Out
