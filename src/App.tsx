@@ -22,10 +22,10 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/teacher" element={<TeacherDashboard />} />
-          <Route path="/student" element={<StudentDashboard />} />
-          <Route path="/parent" element={<ParentDashboard />} />
+          <Route path="/admin/*" element={<AdminDashboard />} />
+          <Route path="/teacher/*" element={<TeacherDashboard />} />
+          <Route path="/student/*" element={<StudentDashboard />} />
+          <Route path="/parent/*" element={<ParentDashboard />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
