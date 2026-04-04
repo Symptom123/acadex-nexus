@@ -26,7 +26,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="min-h-screen bg-transparent flex">
       {/* Left panel */}
       <div className="hidden lg:flex flex-1 bg-foreground items-center justify-center p-16">
         <motion.div
@@ -68,11 +68,10 @@ const Login = () => {
               <button
                 key={role.id}
                 onClick={() => setSelectedRole(role.id)}
-                className={`flex flex-col items-center gap-2 p-4 rounded-2xl border text-xs font-medium transition-all duration-200 ${
-                  selectedRole === role.id
+                className={`flex flex-col items-center gap-2 p-4 rounded-2xl border text-xs font-medium transition-all duration-200 ${selectedRole === role.id
                     ? "border-foreground bg-foreground text-primary-foreground shadow-lg"
                     : "border-border bg-card text-muted-foreground hover:border-foreground/30 hover:shadow-md"
-                }`}
+                  }`}
               >
                 <role.icon className="h-5 w-5" />
                 {role.label}
@@ -110,6 +109,12 @@ const Login = () => {
             <Button type="submit" className="w-full h-12 font-semibold rounded-xl text-[15px] shadow-md hover:shadow-lg transition-shadow">
               Sign In
             </Button>
+            <p className="text-center text-sm text-muted-foreground mt-8">
+              Don't have an account?{" "}
+              <Link to="/signup" className="text-foreground font-semibold hover:underline">
+                Sign up
+              </Link>
+            </p>
           </form>
         </motion.div>
       </div>

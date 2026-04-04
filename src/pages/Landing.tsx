@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { ArrowRight, BarChart3, Shield, Users, Bell, BookOpen, Brain, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import heroBg from "@/assets/hero-bg.jpg";
+import heroBg from "@/assets/cover.png";
 
 const features = [
   {
@@ -46,13 +46,18 @@ const fadeUp = {
   }),
 };
 
+import logoImg from "@/assets/logo.png";
+
 const Landing = () => {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-transparent">
       {/* Nav */}
       <nav className="fixed top-0 left-0 right-0 z-50 glass-surface">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <span className="text-lg font-bold tracking-tight">ACADEX</span>
+          <Link to="/" className="flex items-center gap-3">
+            <img src={logoImg} alt="ACADEX Logo" className="h-12 w-auto" />
+            <span className="logo-glow hidden sm:inline-block">ACADEX</span>
+          </Link>
           <Link to="/login">
             <Button variant="ghost" size="sm" className="font-medium">
               Sign In <ArrowRight className="ml-1 h-4 w-4" />
@@ -64,12 +69,36 @@ const Landing = () => {
       {/* Hero */}
       <section className="relative pt-40 pb-32 px-6 overflow-hidden">
         <div className="absolute inset-0 z-0">
+          {/* Subtle hero backdrop */}
           <img
             src={heroBg}
             alt=""
-            className="w-full h-full object-cover opacity-30"
+            className="w-full h-full object-cover opacity-80"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/80 to-background" />
+          <div className="absolute inset-0 bg-gradient-to-b from-background/30 via-background/60 to-background" />
+
+          {/* ── Crescent moon decorations ── */}
+          {/* Large moon – top-right */}
+          <div
+            className="moon-orb moon-orb-lg"
+            style={{ top: "8%", right: "7%", opacity: 0.82 }}
+          />
+          {/* Medium moon – mid-left */}
+          <div
+            className="moon-orb moon-orb-md"
+            style={{ top: "42%", left: "5%", opacity: 0.65, animationDelay: "-2s" }}
+          />
+          {/* Small moon – lower-right */}
+          <div
+            className="moon-orb moon-orb-sm"
+            style={{ bottom: "12%", right: "18%", opacity: 0.5, animationDelay: "-4s" }}
+          />
+          {/* Extra-small accent – upper-left */}
+          <div
+            className="moon-orb moon-orb-sm"
+            style={{ top: "15%", left: "14%", opacity: 0.38, animationDelay: "-1s",
+                     width: 56, height: 56 }}
+          />
         </div>
 
         <div className="relative z-10 max-w-4xl mx-auto text-center">

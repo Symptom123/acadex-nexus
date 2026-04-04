@@ -68,11 +68,14 @@ const DashboardLayout = ({ children, title, role, navItems }: DashboardLayoutPro
   };
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="min-h-screen bg-transparent flex">
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex flex-col w-72 border-r border-border bg-card/50 backdrop-blur-sm p-8">
+      <aside className="hidden lg:flex flex-col w-72 border-r border-border bg-card/50 backdrop-blur-sm p-8 print:hidden">
         <div className="mb-10">
-          <Link to="/" className="text-xl font-bold tracking-tight">ACADEX</Link>
+          <Link to="/" className="flex items-center gap-2">
+            <img src="/favicon.png" alt="ACADEX Logo" className="h-8 w-auto" />
+            <span className="text-xl font-bold tracking-tight">ACADEX</span>
+          </Link>
           <p className="text-[11px] text-muted-foreground mt-1.5 uppercase tracking-[0.2em] font-medium">{role} Portal</p>
         </div>
 
@@ -91,8 +94,11 @@ const DashboardLayout = ({ children, title, role, navItems }: DashboardLayoutPro
 
       {/* Mobile header */}
       <div className="flex-1 flex flex-col">
-        <header className="lg:hidden flex items-center justify-between p-5 border-b border-border glass-surface sticky top-0 z-50">
-          <Link to="/" className="text-lg font-bold tracking-tight">ACADEX</Link>
+        <header className="lg:hidden flex items-center justify-between p-5 border-b border-border glass-surface sticky top-0 z-50 print:hidden">
+          <Link to="/" className="flex items-center gap-2">
+            <img src="/favicon.png" alt="ACADEX Logo" className="h-6 w-auto" />
+            <span className="text-lg font-bold tracking-tight">ACADEX</span>
+          </Link>
           <Button variant="ghost" size="icon" onClick={() => setMobileOpen(!mobileOpen)}>
             {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
@@ -104,7 +110,7 @@ const DashboardLayout = ({ children, title, role, navItems }: DashboardLayoutPro
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              className="lg:hidden border-b border-border bg-card overflow-hidden"
+              className="lg:hidden border-b border-border bg-card overflow-hidden print:hidden"
             >
               <div className="p-4 space-y-1">
                 {navItems.map(renderNavItem)}
@@ -119,13 +125,13 @@ const DashboardLayout = ({ children, title, role, navItems }: DashboardLayoutPro
         </AnimatePresence>
 
         {/* Page content */}
-        <main className="flex-1 p-6 md:p-10 lg:p-12">
+        <main className="flex-1 p-6 md:p-10 lg:p-12 print:p-0">
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
           >
-            <div className="mb-10">
+            <div className="mb-10 print:hidden">
               <p className="text-[11px] text-muted-foreground uppercase tracking-[0.2em] font-medium mb-2">{role}</p>
               <h1 className="text-3xl md:text-4xl font-bold tracking-tight">{title}</h1>
             </div>

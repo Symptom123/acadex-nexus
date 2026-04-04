@@ -20,11 +20,11 @@ const flaggedClasses = [
 ];
 
 const students = [
-  { 
+  {
     id: "STU001",
-    name: "Sarah Johnson", 
-    grade: "10-A", 
-    status: "At Risk", 
+    name: "Sarah Johnson",
+    grade: "10-A",
+    status: "At Risk",
     avg: 42,
     attendance: "78%",
     marks: [
@@ -34,11 +34,11 @@ const students = [
       { subject: "History", score: 38, grade: "F" },
     ]
   },
-  { 
+  {
     id: "STU002",
-    name: "Emma Williams", 
-    grade: "8-B", 
-    status: "Excellent", 
+    name: "Emma Williams",
+    grade: "8-B",
+    status: "Excellent",
     avg: 92,
     attendance: "98%",
     marks: [
@@ -55,9 +55,9 @@ const AdminDashboard = () => {
   const [selectedStudent, setSelectedStudent] = useState<typeof students[0] | null>(null);
 
   return (
-    <DashboardLayout 
-      title={activeTab === "reports" ? "Report Generation" : "Dashboard"} 
-      role="Administrator" 
+    <DashboardLayout
+      title={activeTab === "reports" ? "Report Generation" : "Dashboard"}
+      role="Administrator"
       navItems={navItems.map(item => ({
         ...item,
         onClick: () => {
@@ -101,11 +101,10 @@ const AdminDashboard = () => {
                         <p className="text-xs text-muted-foreground mt-0.5">{cls.issue}</p>
                       </div>
                       <span
-                        className={`text-[11px] font-semibold px-3 py-1 rounded-full uppercase tracking-wider ${
-                          cls.severity === "high"
+                        className={`text-[11px] font-semibold px-3 py-1 rounded-full uppercase tracking-wider ${cls.severity === "high"
                             ? "bg-destructive/10 text-destructive"
                             : "bg-warning/10 text-warning"
-                        }`}
+                          }`}
                       >
                         {cls.severity}
                       </span>
@@ -182,15 +181,96 @@ const AdminDashboard = () => {
           </motion.div>
         )}
 
-        {(activeTab === "users" || activeTab === "attendance") && (
+        {activeTab === "users" && (
           <motion.div
-            key="other"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex flex-col items-center justify-center h-[50vh] text-muted-foreground"
+            key="users"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="space-y-6"
           >
-            <p className="text-lg font-medium">{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Management Coming Soon</p>
-            <Button variant="link" onClick={() => setActiveTab("overview")}>Return to Overview</Button>
+            <div className="luxury-card-static p-7">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-lg font-semibold">User Management</h2>
+                <Button size="sm">Add New User</Button>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-border text-muted-foreground">
+                      <th className="pb-4 font-medium">Name</th>
+                      <th className="pb-4 font-medium">Role</th>
+                      <th className="pb-4 font-medium">Email</th>
+                      <th className="pb-4 font-medium text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/50">
+                    {[
+                      { name: "John Doe", role: "Student", email: "john@school.com" },
+                      { name: "Jane Smith", role: "Teacher", email: "jane@school.com" },
+                      { name: "Robert Brown", role: "Parent", email: "robert@home.com" },
+                      { name: "Alice White", role: "Admin", email: "alice@acadex.com" },
+                    ].map((user) => (
+                      <tr key={user.email} className="group hover:bg-secondary/30 transition-colors">
+                        <td className="py-4 font-medium">{user.name}</td>
+                        <td className="py-4">
+                          <span className="px-2.5 py-1 rounded-full bg-secondary text-[11px] font-semibold uppercase tracking-wider">
+                            {user.role}
+                          </span>
+                        </td>
+                        <td className="py-4 text-muted-foreground">{user.email}</td>
+                        <td className="py-4 text-right">
+                          <Button variant="ghost" size="sm">Edit</Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {activeTab === "attendance" && (
+          <motion.div
+            key="attendance"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="space-y-6"
+          >
+            <div className="luxury-card-static p-7">
+              <h2 className="text-lg font-semibold mb-6">Daily Attendance Overview</h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                <div className="p-4 rounded-xl bg-green-500/5 border border-green-500/10">
+                  <p className="text-xs text-green-600 font-bold uppercase tracking-wider mb-1">Present</p>
+                  <p className="text-2xl font-bold">1,184</p>
+                </div>
+                <div className="p-4 rounded-xl bg-red-500/5 border border-red-500/10">
+                  <p className="text-xs text-red-600 font-bold uppercase tracking-wider mb-1">Absent</p>
+                  <p className="text-2xl font-bold">42</p>
+                </div>
+                <div className="p-4 rounded-xl bg-amber-500/5 border border-amber-500/10">
+                  <p className="text-xs text-amber-600 font-bold uppercase tracking-wider mb-1">Late</p>
+                  <p className="text-2xl font-bold">21</p>
+                </div>
+              </div>
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold">Recent Alerts</h3>
+                {[
+                  { class: "Grade 10-A", msg: "High absence rate in morning session", time: "2h ago" },
+                  { class: "Grade 8-B", msg: "Teacher marked delayed start", time: "4h ago" },
+                ].map((alert, i) => (
+                  <div key={i} className="flex items-center justify-between p-4 rounded-xl bg-secondary/40">
+                    <div>
+                      <p className="text-sm font-medium">{alert.class}</p>
+                      <p className="text-xs text-muted-foreground">{alert.msg}</p>
+                    </div>
+                    <span className="text-[10px] text-muted-foreground">{alert.time}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

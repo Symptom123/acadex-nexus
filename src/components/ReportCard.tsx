@@ -1,7 +1,8 @@
 import { motion } from "framer-motion";
-import { Download, Printer, User, Calendar, BookOpen, GraduationCap } from "lucide-react";
+import { Download, Printer, User, Calendar, BookOpen, GraduationCap, Edit3, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { useState } from "react";
 
 interface ReportCardProps {
   student: {
@@ -15,6 +16,11 @@ interface ReportCardProps {
 }
 
 const ReportCard = ({ student }: ReportCardProps) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [schoolName, setSchoolName] = useState("Acadex Smart School");
+  const [academicYear, setAcademicYear] = useState("Academic Year 2025-26");
+  const [term, setTerm] = useState("Final Examination");
+
   const handlePrint = () => {
     window.print();
   };
@@ -22,30 +28,60 @@ const ReportCard = ({ student }: ReportCardProps) => {
   return (
     <div className="space-y-6">
       <div className="flex justify-end gap-2 mb-4 no-print">
+        <Button variant="outline" size="sm" onClick={() => setIsEditing(!isEditing)}>
+          {isEditing ? <Check className="w-4 h-4 mr-2" /> : <Edit3 className="w-4 h-4 mr-2" />}
+          {isEditing ? "Finish Editing" : "Customize Report"}
+        </Button>
         <Button variant="outline" size="sm" onClick={handlePrint}>
           <Printer className="w-4 h-4 mr-2" />
           Print
         </Button>
-        <Button variant="default" size="sm">
+        <Button variant="default" size="sm" onClick={handlePrint}>
           <Download className="w-4 h-4 mr-2" />
           Export PDF
         </Button>
       </div>
 
-      <Card className="luxury-card-static border-2 print:border-0 print:shadow-none bg-white text-black p-8 max-w-4xl mx-auto overflow-visible">
+      <div>
+        <Card className="luxury-card-static border-2 print:border-0 print:shadow-none bg-white text-black p-8 max-w-4xl mx-auto overflow-visible shadow-2xl">
         <div className="flex justify-between items-start border-b-2 border-primary/20 pb-6 mb-8">
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 bg-primary/10 rounded-xl flex items-center justify-center">
               <GraduationCap className="w-10 h-10 text-primary" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold uppercase tracking-tighter">Acadex Smart School</h1>
+              {isEditing ? (
+                <input
+                  value={schoolName}
+                  onChange={(e) => setSchoolName(e.target.value)}
+                  className="text-2xl font-bold uppercase tracking-tighter border-b border-primary/30 focus:outline-none w-full"
+                />
+              ) : (
+                <h1 className="text-2xl font-bold uppercase tracking-tighter">{schoolName}</h1>
+              )}
               <p className="text-sm text-muted-foreground uppercase tracking-widest">Official Academic Report</p>
             </div>
           </div>
           <div className="text-right">
-            <p className="text-sm font-bold">Academic Year 2025-26</p>
-            <p className="text-xs text-muted-foreground">Term: Final Examination</p>
+            {isEditing ? (
+              <div className="flex flex-col gap-1 items-end">
+                <input
+                  value={academicYear}
+                  onChange={(e) => setAcademicYear(e.target.value)}
+                  className="text-sm font-bold border-b border-primary/30 focus:outline-none text-right"
+                />
+                <input
+                  value={term}
+                  onChange={(e) => setTerm(e.target.value)}
+                  className="text-xs text-muted-foreground border-b border-primary/30 focus:outline-none text-right"
+                />
+              </div>
+            ) : (
+              <>
+                <p className="text-sm font-bold">{academicYear}</p>
+                <p className="text-xs text-muted-foreground">Term: {term}</p>
+              </>
+            )}
           </div>
         </div>
 
@@ -117,12 +153,14 @@ const ReportCard = ({ student }: ReportCardProps) => {
           </div>
         </div>
       </Card>
-      
+      </div>
+
       <style>{`
         @media print {
           .no-print { display: none !important; }
           body { background: white !important; padding: 0 !important; }
           .luxury-card-static { border: none !important; box-shadow: none !important; padding: 0 !important; }
+          .shadow-2xl { box-shadow: none !important; }
         }
       `}</style>
     </div>

@@ -116,7 +116,11 @@
   }
 
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply text-foreground antialiased;
+    background-image: linear-gradient(hsl(var(--background) / 0.85), hsl(var(--background) / 0.85)), url('./assets/background.png');
+    background-size: cover;
+    background-attachment: fixed;
+    background-position: center;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -157,3 +161,109 @@
     box-shadow: var(--shadow-sm);
   }
 }
+
+/* ── Moon background decoration ── */
+@keyframes crescent {
+  0% {
+    transform: translate(-30px, 30px) scale(0.9);
+    box-shadow: none;
+  }
+  50% {
+    transform: translate(0px, 0px) scale(1.02);
+    box-shadow: 0 0 10px rgba(199, 147, 139, 0.6),
+                0 0 80px 8px rgba(199, 147, 139, 0.45);
+    background-color: #efdbd8;
+  }
+  100% {
+    transform: translate(30px, -30px) scale(0.9);
+    box-shadow: none;
+  }
+}
+
+@keyframes moonFloat {
+  0%   { transform: translateY(0px) rotate(0deg); }
+  50%  { transform: translateY(-18px) rotate(2deg); }
+  100% { transform: translateY(0px) rotate(0deg); }
+}
+
+@keyframes moonPulseRing {
+  0%   { opacity: 0.18; transform: scale(1); }
+  50%  { opacity: 0.06; transform: scale(1.35); }
+  100% { opacity: 0.18; transform: scale(1); }
+}
+
+@keyframes orbColorCycle {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.moon-orb {
+  position: absolute;
+  border-radius: 50%;
+  background: linear-gradient(270deg, #152444, #2a113a, #0e1a30, #113a2a, #152444);
+  background-size: 400% 400%;
+  animation: moonFloat 6s ease-in-out infinite, orbColorCycle 18s ease infinite;
+}
+
+.moon-orb::before {
+  content: '';
+  background-color: #C7938B;
+  position: absolute;
+  display: block;
+  height: 100%;
+  width: 100%;
+  border-radius: 50%;
+  z-index: -1;
+  animation: 3.2s crescent linear infinite alternate;
+}
+
+.moon-orb::after {
+  content: '';
+  position: absolute;
+  inset: -20%;
+  border-radius: 50%;
+  border: 1.5px solid rgba(199, 147, 139, 0.22);
+  animation: moonPulseRing 4s ease-in-out infinite;
+}
+
+/* size variants */
+.moon-orb-lg { width: 220px; height: 220px; }
+.moon-orb-md { width: 140px; height: 140px; animation-duration: 7.5s; animation-delay: -3s; }
+.moon-orb-sm { width:  90px; height:  90px; animation-duration: 5.2s; animation-delay: -1.5s; }
+
+/* slow down the crescent animation for smaller orbs */
+.moon-orb-md::before { animation-duration: 4.5s; }
+.moon-orb-sm::before { animation-duration: 5.8s; }
+
+@media (max-width: 768px) {
+  .moon-orb-lg { width: 140px; height: 140px; }
+  .moon-orb-md { width:  90px; height:  90px; }
+  .moon-orb-sm { width:  60px; height:  60px; }
+}
+
+/* ── Logo backlight glow ── */
+@keyframes animateGlow {
+  0%   { background-position: 0%   50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0%   50%; }
+}
+
+@keyframes logoTextColor {
+  0%   { color: #7e0fff; }
+  50%  { color: #0fffc1; }
+  100% { color: #7e0fff; }
+}
+
+.logo-glow {
+  position: relative;
+  display: inline-block;
+  color: #7e0fff;
+  animation: logoTextColor 10s ease infinite;
+  letter-spacing: 0.08em;
+  font-weight: 800;
+  font-size: 1.05rem;
+  isolation: isolate;
+}
+
+
