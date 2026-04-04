@@ -20,7 +20,81 @@
   </head>
 
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <style>
+        #initial-loader {
+          position: fixed;
+          top: 0; left: 0; width: 100%; height: 100%;
+          background: radial-gradient(circle at center, #1a1a24 0%, #050508 100%);
+          display: flex; flex-direction: column;
+          align-items: center; justify-content: center;
+          z-index: 99999;
+          font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        
+        .loader-logo-ring {
+          position: relative;
+          width: 160px;
+          height: 160px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-bottom: 50px;
+        }
+        
+        .loader-logo-ring::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          border-radius: 50%;
+          border: 2px solid rgba(255, 255, 255, 0.05);
+          border-top: 2px solid rgba(255, 255, 255, 0.8);
+          border-right: 2px solid rgba(255, 255, 255, 0.8);
+          animation: elegantSpin 2s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
+        }
+        
+        .loader-logo-ring::after {
+          content: '';
+          position: absolute;
+          inset: -14px;
+          border-radius: 50%;
+          border: 1px solid rgba(255, 255, 255, 0.03);
+          border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+          animation: elegantSpin 3.5s linear infinite reverse;
+        }
+
+        .loader-logo {
+          width: 85px; height: auto;
+          animation: slowBreath 4s ease-in-out infinite;
+        }
+
+        .loader-text {
+          font-size: 20px;
+          font-weight: 400;
+          letter-spacing: 18px;
+          margin-right: -18px; /* visually centers despite letter-spacing */
+          text-transform: uppercase;
+          color: rgba(255, 255, 255, 0.85);
+          animation: slowBreath 4s ease-in-out infinite;
+        }
+
+        @keyframes elegantSpin {
+          0%   { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+
+        @keyframes slowBreath {
+          0%, 100% { opacity: 0.6; transform: scale(0.98); }
+          50% { opacity: 1; transform: scale(1.02); }
+        }
+      </style>
+      <div id="initial-loader">
+        <div class="loader-logo-ring">
+          <img src="/favicon.png" alt="ACADEX Logo" class="loader-logo" />
+        </div>
+        <div class="loader-text">ACADEX</div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
