@@ -52,11 +52,13 @@ const Landing = () => {
   return (
     <div className="min-h-screen bg-transparent">
       {/* Nav */}
-      <nav className="fixed top-0 left-0 right-0 z-50 glass-surface">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-3">
-            <img src={logoImg} alt="ACADEX Logo" className="h-12 w-auto" />
-            <span className="logo-glow hidden sm:inline-block">ACADEX</span>
+      <nav className="fixed top-0 left-0 right-0 z-50 glass-surface mt-0">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+          <Link to="/" className="flex items-center gap-2 sm:gap-3">
+            <img src={logoImg} alt="ACADEX Logo" className="h-9 sm:h-12 w-auto" />
+            <div className="hidden sm:block">
+              <span className="logo-glow text-xl">ACADEX</span>
+            </div>
           </Link>
           <Link to="/login">
             <Button variant="ghost" size="sm" className="font-medium">

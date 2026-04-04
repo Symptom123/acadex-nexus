@@ -95,9 +95,8 @@ const DashboardLayout = ({ children, title, role, navItems }: DashboardLayoutPro
       {/* Mobile header */}
       <div className="flex-1 flex flex-col">
         <header className="lg:hidden flex items-center justify-between p-5 border-b border-border glass-surface sticky top-0 z-50 print:hidden">
-          <Link to="/" className="flex items-center gap-2">
-            <img src="/favicon.png" alt="ACADEX Logo" className="h-6 w-auto" />
-            <span className="text-lg font-bold tracking-tight">ACADEX</span>
+          <Link to="/">
+            <img src="/favicon.png" alt="ACADEX Logo" className="h-8 w-auto" />
           </Link>
           <Button variant="ghost" size="icon" onClick={() => setMobileOpen(!mobileOpen)}>
             {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
