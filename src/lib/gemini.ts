@@ -98,15 +98,36 @@ export async function generateAIChatResponse(
     return "I'm sorry, the AI Assistant is currently unavailable. Please check your API key.";
   }
 
-  // Convert history to Gemini format if needed, but for simplicity we can just format it as a text block
   const historyText = chatHistory
     .map(msg => `${msg.role === "user" ? "User" : "AI"}: ${msg.content}`)
     .join("\n");
 
+  const roleContext: Record<string, string> = {
+    Student: `You are a friendly, motivating AI Study Coach for a student on the ACADEX platform. 
+      Help them with study tips, exam prep strategies, time management, and understanding subjects.
+      Be encouraging and positive. Use simple language. When giving tips, be specific and actionable.
+      If they mention a subject, give subject-specific advice.`,
+    Teacher: `You are an expert AI Teaching Assistant for a teacher on the ACADEX platform.
+      Help with pedagogical strategies, classroom management, lesson planning, grading approaches, 
+      and how to support struggling students. Be professional and evidence-based.
+      Suggest differentiated instruction techniques when relevant.`,
+    Parent: `You are a supportive AI Parenting Coach for a parent on the ACADEX platform.
+      Help them understand their child's academic progress, suggest ways to support learning at home,
+      and explain educational concepts. Be empathetic and reassuring.
+      Offer practical at-home strategies for homework help and motivation.`,
+    Admin: `You are a strategic AI School Advisor for an administrator on the ACADEX platform.
+      Help with school management strategies, data-driven decision making, staff support,
+      policy recommendations, and improving school-wide performance metrics.
+      Be concise and action-oriented.`,
+  };
+
+  const systemContext = roleContext[userRole] || roleContext["Student"];
+
   const prompt = `
-    You are an AI Smart Coach for the ACADEX educational platform.
-    You are currently talking to a user with the role of: ${userRole}.
-    Be helpful, concise, and encouraging. Answer their questions related to education, their portal, or general academic advice.
+    ${systemContext}
+
+    Keep responses concise (2-4 short paragraphs max). Use bullet points when listing tips.
+    Be warm and human. Never use markdown code blocks.
 
     Chat History:
     ${historyText}
@@ -114,6 +135,7 @@ export async function generateAIChatResponse(
     User: ${message}
     AI:
   `;
+
 
   try {
     const res = await fetch(GEMINI_URL, {
