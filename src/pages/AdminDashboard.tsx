@@ -35,6 +35,9 @@ const AdminDashboard = () => {
   const [todayPresent, setTodayPresent] = useState(0);
   const [todayAbsent, setTodayAbsent] = useState(0);
   const [classesList, setClassesList] = useState<any[]>([]);
+  const [todayAttendanceList, setTodayAttendanceList] = useState<any[]>([]);
+  const [attendanceFilter, setAttendanceFilter] = useState("all");
+  const [attendanceSearch, setAttendanceSearch] = useState("");
 
   // Messaging State
   const [conversations, setConversations] = useState<any[]>([]);
@@ -99,12 +102,13 @@ const AdminDashboard = () => {
       const todayStr = new Date().toISOString().split('T')[0];
       const { data, error } = await supabase
         .from("attendance_history")
-        .select("*")
+        .select("date_str, status, class_id, student_uid, profiles(name, email), classes(subject, class_name)")
         .eq("date_str", todayStr);
       
       if (data && !error) {
         setTodayPresent(data.filter((r: any) => r.status === "present").length);
         setTodayAbsent(data.filter((r: any) => r.status === "absent").length);
+        setTodayAttendanceList(data);
       }
     };
     fetchTodayAttendance();
@@ -601,10 +605,119 @@ const AdminDashboard = () => {
                   <p className="text-2xl font-bold">{avgAttendance}</p>
                 </div>
               </div>
-              {todayTotal === 0 && (
+              {todayTotal === 0 ? (
                 <div className="p-6 text-center bg-secondary/20 rounded-xl">
                   <UserCheck className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
                   <p className="text-sm text-muted-foreground">No attendance has been recorded for today yet. Teachers can mark attendance from their dashboard.</p>
+                </div>
+              ) : (
+                <div className="mt-8 border-t border-border/40 pt-8">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                    <div>
+                      <h3 className="text-base font-semibold">Today's Student Attendance Log</h3>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Showing students who were checked in today
+                      </p>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+                      {/* Search Input */}
+                      <input
+                        type="text"
+                        placeholder="Search student or class…"
+                        value={attendanceSearch}
+                        onChange={(e) => setAttendanceSearch(e.target.value)}
+                        className="w-full sm:w-56 h-9 px-3 rounded-lg bg-secondary/50 border border-border/50 text-xs focus:outline-none focus:ring-1 focus:ring-primary focus:bg-background"
+                      />
+
+                      {/* Filter pills */}
+                      <div className="flex gap-1.5 rounded-lg bg-secondary p-0.5 border border-border/30">
+                        {["all", "present", "absent"].map((filterOpt) => (
+                          <button
+                            key={filterOpt}
+                            onClick={() => setAttendanceFilter(filterOpt)}
+                            className={`px-2.5 py-1 rounded text-[10px] font-semibold uppercase tracking-wider transition-all ${
+                              attendanceFilter === filterOpt
+                                ? "bg-background text-foreground shadow-sm font-bold"
+                                : "text-muted-foreground hover:text-foreground"
+                            }`}
+                          >
+                            {filterOpt}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead>
+                        <tr className="border-b border-border text-muted-foreground font-semibold">
+                          <th className="pb-3 pl-2">Student Name</th>
+                          <th className="pb-3">Email Address</th>
+                          <th className="pb-3">Subject / class</th>
+                          <th className="pb-3 text-right pr-2">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border/50">
+                        {todayAttendanceList
+                          .filter((rec) => {
+                            if (attendanceFilter === "present" && rec.status !== "present") return false;
+                            if (attendanceFilter === "absent" && rec.status !== "absent") return false;
+                            
+                            if (attendanceSearch.trim()) {
+                              const s = attendanceSearch.toLowerCase().trim();
+                              const nameMatch = rec.profiles?.name?.toLowerCase().includes(s);
+                              const emailMatch = rec.profiles?.email?.toLowerCase().includes(s);
+                              const subjectMatch = rec.classes?.subject?.toLowerCase().includes(s);
+                              const classMatch = rec.classes?.class_name?.toLowerCase().includes(s);
+                              return nameMatch || emailMatch || subjectMatch || classMatch;
+                            }
+                            return true;
+                          })
+                          .map((rec, idx) => (
+                            <tr key={idx} className="hover:bg-secondary/20 transition-colors">
+                              <td className="py-3 pl-2 font-medium">{rec.profiles?.name || "Unknown"}</td>
+                              <td className="py-3 text-muted-foreground">{rec.profiles?.email || "N/A"}</td>
+                              <td className="py-3 font-medium">
+                                <span className="capitalize">{rec.classes?.subject || "General Class"}</span>{" "}
+                                <span className="text-muted-foreground text-[10px]">({rec.classes?.class_name || "N/A"})</span>
+                              </td>
+                              <td className="py-3 text-right pr-2">
+                                <span
+                                  className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                                    rec.status === "present"
+                                      ? "bg-green-500/10 text-green-600"
+                                      : "bg-red-500/10 text-red-500"
+                                  }`}
+                                >
+                                  {rec.status}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        {todayAttendanceList.filter((rec) => {
+                          if (attendanceFilter === "present" && rec.status !== "present") return false;
+                          if (attendanceFilter === "absent" && rec.status !== "absent") return false;
+                          if (attendanceSearch.trim()) {
+                            const s = attendanceSearch.toLowerCase().trim();
+                            const nameMatch = rec.profiles?.name?.toLowerCase().includes(s);
+                            const emailMatch = rec.profiles?.email?.toLowerCase().includes(s);
+                            const subjectMatch = rec.classes?.subject?.toLowerCase().includes(s);
+                            const classMatch = rec.classes?.class_name?.toLowerCase().includes(s);
+                            return nameMatch || emailMatch || subjectMatch || classMatch;
+                          }
+                          return true;
+                        }).length === 0 && (
+                          <tr>
+                            <td colSpan={4} className="py-6 text-center text-muted-foreground">
+                              No matching attendance records found for today.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               )}
             </div>
