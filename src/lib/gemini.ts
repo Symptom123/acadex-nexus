@@ -88,3 +88,63 @@ export async function generateStudentGrowthTips(
     return defaultTips;
   }
 }
+
+export async function generateAIChatResponse(
+  message: string,
+  chatHistory: { role: string; content: string }[],
+  userRole: string
+): Promise<string> {
+  if (!GEMINI_API_KEY) {
+    return "I'm sorry, the AI Assistant is currently unavailable. Please check your API key.";
+  }
+
+  // Convert history to Gemini format if needed, but for simplicity we can just format it as a text block
+  const historyText = chatHistory
+    .map(msg => `${msg.role === "user" ? "User" : "AI"}: ${msg.content}`)
+    .join("\n");
+
+  const prompt = `
+    You are an AI Smart Coach for the ACADEX educational platform.
+    You are currently talking to a user with the role of: ${userRole}.
+    Be helpful, concise, and encouraging. Answer their questions related to education, their portal, or general academic advice.
+
+    Chat History:
+    ${historyText}
+    
+    User: ${message}
+    AI:
+  `;
+
+  try {
+    const res = await fetch(GEMINI_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [
+              {
+                text: prompt
+              }
+            ]
+          }
+        ]
+      })
+    });
+
+    if (!res.ok) {
+      console.warn("Gemini API call failed with status:", res.status);
+      return "I encountered an error connecting to the server. Please try again later.";
+    }
+
+    const data = await res.json();
+    let text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    
+    return text.trim() || "I'm not sure how to respond to that.";
+  } catch (err) {
+    console.error("Error generating AI chat response:", err);
+    return "An unexpected error occurred. Please try again.";
+  }
+}

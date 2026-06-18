@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { auth } from "@/lib/firebase";
 import { signOut } from "firebase/auth";
 import { useAuth } from "@/contexts/AuthContext";
+import AIAssistantWidget from "./AIAssistantWidget";
 
 interface NavItem {
   label: string;
@@ -159,6 +160,9 @@ const DashboardLayout = ({ children, title, role, navItems }: DashboardLayoutPro
             {children}
           </motion.div>
         </main>
+        
+        {/* Global AI Assistant */}
+        <AIAssistantWidget role={role} />
       </div>
     </div>
   );
