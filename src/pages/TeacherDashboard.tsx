@@ -1,69 +1,544 @@
-import { BookOpen, ClipboardCheck, AlertTriangle, BarChart3, UserCheck, FileText, ChevronRight } from "lucide-react";
+import { BookOpen, ClipboardCheck, AlertTriangle, BarChart3, UserCheck, FileText, ChevronRight, GraduationCap, ChevronLeft } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import StatCard from "@/components/StatCard";
 import { motion, AnimatePresence } from "framer-motion";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 const navItems = [
   { label: "Overview", id: "overview", icon: BarChart3 },
+  { label: "My Classes", id: "classes", icon: BookOpen },
+  { label: "Attendance", id: "attendance", icon: UserCheck },
   { label: "Marks Entry", id: "marks", icon: ClipboardCheck },
   { label: "Assignments", id: "assignments", icon: FileText },
-  { label: "Attendance", id: "attendance", icon: UserCheck },
-];
-
-const flaggedStudents = [
-  { name: "Sarah Johnson", subject: "Mathematics", avg: 38, trend: "declining" },
-  { name: "James Brown", subject: "Mathematics", avg: 42, trend: "stable" },
-  { name: "Liam Parker", subject: "Physics", avg: 45, trend: "declining" },
-];
-
-const assignments = [
-  { title: "Algebra Quiz #5", dueDate: "Feb 15", submitted: 28, total: 32 },
-  { title: "Physics Lab Report", dueDate: "Feb 18", submitted: 15, total: 32 },
-  { title: "Essay: Climate Change", dueDate: "Feb 20", submitted: 8, total: 30 },
-];
-
-const pendingMarks = [
-  { student: "Sarah Johnson", subject: "Mathematics", assignment: "Midterm Exam" },
-  { student: "Michael Chen", subject: "Mathematics", assignment: "Practice Test" },
-  { student: "Emily Davis", subject: "Mathematics", assignment: "Homework #4" },
 ];
 
 const TeacherDashboard = () => {
+  const { currentUser, userName } = useAuth();
   const [activeTab, setActiveTab] = useState("overview");
-  const [assignmentList, setAssignmentList] = useState(assignments);
+  
+  // Real-time classes & attendance state
+  const [classes, setClasses] = useState<any[]>([]);
+  const [newSubject, setNewSubject] = useState("");
+  const [newClassName, setNewClassName] = useState("");
+  const [selectedClassId, setSelectedClassId] = useState<string>("");
+  const [classStudents, setClassStudents] = useState<any[]>([]);
+  const [localAttendance, setLocalAttendance] = useState<Record<string, 'present' | 'absent'>>({});
+  const [isSavingAttendance, setIsSavingAttendance] = useState(false);
+
+  // Real-time assignments state
+  const [assignmentList, setAssignmentList] = useState<any[]>([]);
   const [newAssignmentTitle, setNewAssignmentTitle] = useState("");
-  const [attendanceRecords, setAttendanceRecords] = useState<Record<string, string>>({
-    "Sarah Johnson": "present",
-    "John Doe": "absent",
-    "Michael Chen": "present",
-    "Emily Davis": "present",
-    "Liam Parker": "present",
-    "James Brown": "present",
-  });
+  const [newAssignmentClassId, setNewAssignmentClassId] = useState("");
+  const [assignmentFile, setAssignmentFile] = useState<File | null>(null);
+  const [assignmentImage, setAssignmentImage] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
-  const handleCreateAssignment = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newAssignmentTitle) return;
+  // Real-time analytics state
+  const [globalAttendanceStat, setGlobalAttendanceStat] = useState<string>("0%");
+  const [allStudentsMap, setAllStudentsMap] = useState<Record<string, any[]>>({});
+  const [pendingSubmissions, setPendingSubmissions] = useState<any[]>([]);
+  const [realFlaggedStudents, setRealFlaggedStudents] = useState<any[]>([]);
+  const [gradeInputs, setGradeInputs] = useState<Record<string, string>>({});
+  const [gradingId, setGradingId] = useState<string | null>(null);
 
-    const newAssignment = {
-      title: newAssignmentTitle,
-      dueDate: "Mar 01",
-      submitted: 0,
-      total: 32
+  const [viewingAssignmentId, setViewingAssignmentId] = useState<string | null>(null);
+  const [allSubmissionsList, setAllSubmissionsList] = useState<any[]>([]);
+
+  // Fetch teacher's classes
+  useEffect(() => {
+    if (!currentUser) return;
+    
+    const fetchClasses = async () => {
+      const { data, error } = await supabase
+        .from("classes")
+        .select("*")
+        .eq("teacher_id", currentUser.uid);
+      if (data && !error) {
+        const mapped = data.map(item => ({
+          id: item.id,
+          teacherId: item.teacher_id,
+          teacherName: item.teacher_name,
+          subject: item.subject,
+          className: item.class_name,
+          createdAt: item.created_at
+        }));
+        setClasses(mapped);
+        if (mapped.length > 0 && !selectedClassId) {
+          setSelectedClassId(mapped[0].id);
+        }
+      }
     };
 
-    setAssignmentList([newAssignment, ...assignmentList]);
-    setNewAssignmentTitle("");
-    setActiveTab("assignments");
+    fetchClasses();
+
+    const channel = supabase
+      .channel('classes-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'classes' }, () => {
+        fetchClasses();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [currentUser]);
+
+  // Fetch students for all classes to calculate global attendance
+  useEffect(() => {
+    if (classes.length === 0) return;
+    
+    const fetchAllStudents = async () => {
+      const classIds = classes.map(c => c.id);
+      const { data, error } = await supabase
+        .from("class_students")
+        .select("*")
+        .in("class_id", classIds);
+      
+      if (data && !error) {
+        const map: Record<string, any[]> = {};
+        classes.forEach(c => {
+          map[c.id] = [];
+        });
+        data.forEach(item => {
+          if (map[item.class_id]) {
+            map[item.class_id].push({
+              id: item.student_uid,
+              studentUid: item.student_uid,
+              studentName: item.student_name,
+              currentAttendanceStatus: item.current_attendance_status
+            });
+          }
+        });
+        setAllStudentsMap(map);
+      }
+    };
+
+    fetchAllStudents();
+
+    const channel = supabase
+      .channel('class-students-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'class_students' }, () => {
+        fetchAllStudents();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [classes]);
+
+  // Calculate global attendance stat
+  useEffect(() => {
+    let enrolled = 0;
+    let present = 0;
+    Object.values(allStudentsMap).forEach(classStudentsArr => {
+      classStudentsArr.forEach(student => {
+        enrolled++;
+        if (!student.currentAttendanceStatus || student.currentAttendanceStatus === "present") {
+          present++;
+        }
+      });
+    });
+    if (enrolled === 0) setGlobalAttendanceStat("0%");
+    else setGlobalAttendanceStat(`${Math.round((present / enrolled) * 100)}%`);
+  }, [allStudentsMap]);
+
+  // Fetch students & today's attendance for the selected class
+  useEffect(() => {
+    if (!selectedClassId) {
+      setClassStudents([]);
+      setLocalAttendance({});
+      return;
+    }
+
+    const fetchClassStudentsAndAttendance = async () => {
+      // 1. Fetch class students
+      const { data: studentsData, error: studentsError } = await supabase
+        .from("class_students")
+        .select("*")
+        .eq("class_id", selectedClassId);
+      
+      if (studentsData && !studentsError) {
+        const mappedStudents = studentsData.map(item => ({
+          id: item.student_uid,
+          studentUid: item.student_uid,
+          studentName: item.student_name
+        }));
+        setClassStudents(mappedStudents);
+
+        // 2. Fetch today's attendance history records
+        const todayStr = new Date().toISOString().split('T')[0];
+        const { data: historyData, error: historyError } = await supabase
+          .from("attendance_history")
+          .select("*")
+          .eq("class_id", selectedClassId)
+          .eq("date_str", todayStr);
+        
+        if (historyData && !historyError) {
+          const attendanceMap: Record<string, 'present' | 'absent'> = {};
+          historyData.forEach(record => {
+            attendanceMap[record.student_uid] = record.status as 'present' | 'absent';
+          });
+          setLocalAttendance(attendanceMap);
+        } else {
+          setLocalAttendance({});
+        }
+      }
+    };
+
+    fetchClassStudentsAndAttendance();
+
+    const channel = supabase
+      .channel(`attendance-history-today-${selectedClassId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance_history', filter: `class_id=eq.${selectedClassId}` }, () => {
+        fetchClassStudentsAndAttendance();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [selectedClassId]);
+
+  // Fetch assignments for the teacher
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const fetchAssignments = async () => {
+      const { data, error } = await supabase
+        .from("assignments")
+        .select("*")
+        .eq("teacher_id", currentUser.uid);
+      
+      if (data && !error) {
+        const mapped = data.map(item => ({
+          id: item.id,
+          teacherId: item.teacher_id,
+          classId: item.class_id,
+          className: item.class_name,
+          subject: item.subject,
+          title: item.title,
+          fileUrl: item.file_url,
+          imageUrl: item.image_url,
+          dueDate: item.due_date,
+          submitted: item.submitted,
+          total: item.total,
+          createdAt: item.created_at
+        }));
+        setAssignmentList(mapped);
+      }
+    };
+
+    fetchAssignments();
+
+    const channel = supabase
+      .channel('assignments-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'assignments' }, () => {
+        fetchAssignments();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [currentUser]);
+  // Fetch submissions to calculate pending marks and flagged students
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const fetchSubmissions = async () => {
+      const { data, error } = await supabase
+        .from("submissions")
+        .select("*")
+        .eq("teacher_id", currentUser.uid);
+      
+      if (data && !error) {
+        const allSubs = data.map(item => ({
+          id: item.id,
+          assignmentId: item.assignment_id,
+          assignmentTitle: item.assignment_title,
+          studentUid: item.student_uid,
+          studentName: item.student_name,
+          teacherId: item.teacher_id,
+          classId: item.class_id,
+          subject: item.subject,
+          fileUrl: item.file_url,
+          grade: item.grade,
+          gradedAt: item.graded_at,
+          submittedAt: item.submitted_at
+        }));
+        
+        setAllSubmissionsList(allSubs);
+        const pending = allSubs.filter(s => s.grade === null);
+        setPendingSubmissions(pending);
+        
+        const graded = allSubs.filter(s => s.grade !== null);
+        const studentAverages: Record<string, { totalScore: number, count: number, name: string, subject: string }> = {};
+        
+        graded.forEach(s => {
+          if (!studentAverages[s.studentUid]) {
+            studentAverages[s.studentUid] = { totalScore: 0, count: 0, name: s.studentName, subject: s.subject };
+          }
+          studentAverages[s.studentUid].totalScore += s.grade;
+          studentAverages[s.studentUid].count++;
+        });
+        
+        const flagged: any[] = [];
+        Object.keys(studentAverages).forEach(uid => {
+          const avg = studentAverages[uid].totalScore / studentAverages[uid].count;
+          if (avg < 50) {
+            flagged.push({
+              name: studentAverages[uid].name,
+              subject: studentAverages[uid].subject,
+              avg: Math.round(avg),
+              trend: "declining"
+            });
+          }
+        });
+        setRealFlaggedStudents(flagged);
+      }
+    };
+
+    fetchSubmissions();
+
+    const channel = supabase
+      .channel('submissions-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'submissions' }, () => {
+        fetchSubmissions();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [currentUser]);
+
+
+  const handleCreateClass = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newSubject || !newClassName || !currentUser) return;
+    try {
+      // Ensure profile exists in Supabase to satisfy foreign key constraint
+      await supabase.from("profiles").upsert({
+        id: currentUser.uid,
+        name: userName || currentUser.displayName || "Unknown Teacher",
+        email: currentUser.email || "",
+        role: "teacher"
+      });
+
+      const { error } = await supabase.from("classes").insert({
+        teacher_id: currentUser.uid,
+        teacher_name: userName || "Unknown Teacher",
+        subject: newSubject,
+        class_name: newClassName
+      });
+      if (error) throw error;
+      toast.success("Class created successfully!");
+      setNewSubject("");
+      setNewClassName("");
+    } catch (error: any) {
+      console.error("Error creating class", error);
+      toast.error(error.message || "Failed to create class.");
+    }
   };
 
-  const toggleAttendance = (name: string, status: string) => {
-    setAttendanceRecords(prev => ({
+  const handleMarkLocalAttendance = (studentUid: string, status: 'present' | 'absent') => {
+    setLocalAttendance(prev => ({
       ...prev,
-      [name]: status
+      [studentUid]: status
     }));
+  };
+
+  const handleSaveAttendance = async () => {
+    if (!selectedClassId || classStudents.length === 0) {
+      toast.error("No class or students selected.");
+      return;
+    }
+    setIsSavingAttendance(true);
+    try {
+      const todayStr = new Date().toISOString().split('T')[0];
+      
+      const upsertData = Object.entries(localAttendance).map(([studentUid, status]) => ({
+        class_id: selectedClassId,
+        student_uid: studentUid,
+        date_str: todayStr,
+        status: status
+      }));
+
+      if (upsertData.length > 0) {
+        const { error } = await supabase
+          .from("attendance_history")
+          .upsert(upsertData, { onConflict: 'class_id,student_uid,date_str' });
+        if (error) throw error;
+        toast.success("Attendance saved successfully for today!");
+      } else {
+        toast.error("Please mark at least one student before saving.");
+      }
+    } catch (error: any) {
+      console.error("Error saving attendance", error);
+      toast.error(error.message || "Failed to save attendance.");
+    } finally {
+      setIsSavingAttendance(false);
+    }
+  };
+
+  const handleCreateAssignment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newAssignmentTitle || !newAssignmentClassId || !currentUser) {
+      toast.error("Please fill in all fields.");
+      return;
+    }
+
+    const selectedClass = classes.find(c => c.id === newAssignmentClassId);
+    if (!selectedClass) return;
+
+    setIsUploading(true);
+    let fileUrl = "";
+    let imageUrl = "";
+
+    try {
+      // Ensure profile exists in Supabase to satisfy foreign key constraint
+      await supabase.from("profiles").upsert({
+        id: currentUser.uid,
+        name: userName || currentUser.displayName || "Unknown Teacher",
+        email: currentUser.email || "",
+        role: "teacher"
+      });
+
+      if (assignmentFile) {
+        const sanitizedName = assignmentFile.name.replace(/[^a-zA-Z0-9.]/g, "_");
+        const filePath = `${currentUser.uid}/${Date.now()}_${sanitizedName}`;
+        const { data, error: uploadError } = await supabase.storage
+          .from("assignments")
+          .upload(filePath, assignmentFile);
+        if (uploadError) throw uploadError;
+        
+        const { data: { publicUrl } } = supabase.storage
+          .from("assignments")
+          .getPublicUrl(filePath);
+        fileUrl = publicUrl;
+      }
+
+      if (assignmentImage) {
+        const sanitizedName = assignmentImage.name.replace(/[^a-zA-Z0-9.]/g, "_");
+        const imgPath = `images/${currentUser.uid}/${Date.now()}_${sanitizedName}`;
+        const { data, error: uploadError } = await supabase.storage
+          .from("assignments")
+          .upload(imgPath, assignmentImage);
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from("assignments")
+          .getPublicUrl(imgPath);
+        imageUrl = publicUrl;
+      }
+
+      const { error } = await supabase.from("assignments").insert({
+        teacher_id: currentUser.uid,
+        class_id: selectedClass.id,
+        class_name: selectedClass.className,
+        subject: selectedClass.subject,
+        title: newAssignmentTitle,
+        file_url: fileUrl,
+        image_url: imageUrl,
+        due_date: "Mar 01", 
+        submitted: 0,
+        total: 32
+      });
+      if (error) throw error;
+
+      toast.success("Assignment created successfully!");
+      setNewAssignmentTitle("");
+      setNewAssignmentClassId("");
+      setAssignmentFile(null);
+      setAssignmentImage(null);
+      setActiveTab("assignments");
+    } catch (error: any) {
+      console.error("Error creating assignment", error);
+      if (error.message?.includes("Bucket not found") || JSON.stringify(error)?.includes("Bucket not found")) {
+        toast.error("Supabase Storage bucket 'assignments' was not found. Please log in to your Supabase Console, navigate to Storage, and create a PUBLIC bucket named 'assignments'.");
+      } else {
+        toast.error(error.message || "Failed to create assignment");
+      }
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleDownloadFile = async (fileUrl: string) => {
+    try {
+      let bucket = "assignments";
+      let filePath = "";
+      
+      const assignmentsIndex = fileUrl.indexOf("/assignments/");
+      const submissionsIndex = fileUrl.indexOf("/submissions/");
+      
+      if (assignmentsIndex !== -1) {
+        bucket = "assignments";
+        filePath = decodeURIComponent(fileUrl.substring(assignmentsIndex + "/assignments/".length));
+      } else if (submissionsIndex !== -1) {
+        bucket = "submissions";
+        filePath = decodeURIComponent(fileUrl.substring(submissionsIndex + "/submissions/".length));
+      } else {
+        window.open(fileUrl, "_blank");
+        return;
+      }
+      
+      const { data, error } = await supabase.storage
+        .from(bucket)
+        .download(filePath);
+      
+      if (error) throw error;
+      
+      const blob = new Blob([data]);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", filePath.split("/").pop() || "download");
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (err: any) {
+      console.error("Error downloading file:", err);
+      toast.error(`Download failed: ${err.message || JSON.stringify(err)}. (Bucket: ${bucket}, Path: ${filePath})`);
+    }
+  };
+
+  const handleGradeSubmission = async (submissionId: string) => {
+    const gradeStr = gradeInputs[submissionId];
+    if (!gradeStr) {
+      toast.error("Please enter a grade.");
+      return;
+    }
+    const grade = parseInt(gradeStr, 10);
+    if (isNaN(grade) || grade < 0 || grade > 100) {
+      toast.error("Grade must be a number between 0 and 100.");
+      return;
+    }
+    setGradingId(submissionId);
+    try {
+      const { error } = await supabase
+        .from("submissions")
+        .update({ grade, graded_at: new Date().toISOString() })
+        .eq("id", submissionId);
+      if (error) throw error;
+      
+      toast.success("Grade saved successfully!");
+      setGradeInputs(prev => {
+        const copy = { ...prev };
+        delete copy[submissionId];
+        return copy;
+      });
+    } catch (error: any) {
+      console.error("Error grading submission", error);
+      toast.error(error.message || "Failed to save grade.");
+    } finally {
+      setGradingId(null);
+    }
   };
 
   return (
@@ -84,24 +559,36 @@ const TeacherDashboard = () => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
           >
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-12">
-              <StatCard icon={BookOpen} label="My Classes" value="4" index={0} />
-              <StatCard icon={ClipboardCheck} label="Pending Marks" value="12" index={1} />
-              <StatCard icon={AlertTriangle} label="Flagged Students" value="3" index={2} />
-              <StatCard icon={UserCheck} label="Today's Attendance" value="96%" index={3} />
+            {/* Top Banner mapping to the UI theme */}
+            <div className="bg-primary text-white rounded-2xl p-8 mb-8 relative overflow-hidden shadow-lg">
+              <div className="relative z-10 max-w-2xl">
+                <h1 className="text-3xl font-bold mb-3">Welcome back, {userName || "Teacher"}</h1>
+                <p className="text-white/80 leading-relaxed text-sm">
+                  You have {classes.length} active classes in your domain. Check out your assignments and mark attendance.
+                </p>
+              </div>
+              <div className="absolute right-0 top-0 bottom-0 w-1/3 min-w-[250px] opacity-20 bg-gradient-to-l from-black/40 to-transparent pointer-events-none" />
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+              <StatCard icon={BookOpen} label="My Classes" value={classes.length.toString()} index={0} />
+              <StatCard icon={ClipboardCheck} label="Pending Marks" value={pendingSubmissions.length.toString()} index={1} />
+              <StatCard icon={AlertTriangle} label="Flagged Students" value={realFlaggedStudents.length.toString()} index={2} />
+              <StatCard icon={UserCheck} label="Today's Attendance" value={globalAttendanceStat} index={3} />
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <motion.div
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
-                className="luxury-card-static p-7"
+                className="luxury-card-static p-6 lg:col-span-2 bg-card rounded-2xl shadow-sm border-0"
               >
                 <h2 className="text-lg font-semibold mb-5">Flagged Students</h2>
                 <div className="space-y-3">
-                  {flaggedStudents.map((s) => (
-                    <div key={s.name} className="flex items-center justify-between p-4 rounded-xl bg-secondary/60 hover:bg-secondary transition-colors">
+                  {realFlaggedStudents.length === 0 && <p className="text-xs text-muted-foreground p-4 bg-secondary/30 rounded-xl">No students flagged based on current grades.</p>}
+                  {realFlaggedStudents.map((s, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-4 rounded-xl bg-secondary/60 hover:bg-secondary transition-colors">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-destructive/10 flex items-center justify-center">
                           <AlertTriangle className="h-3.5 w-3.5 text-destructive" />
@@ -124,26 +611,88 @@ const TeacherDashboard = () => {
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
-                className="luxury-card-static p-7"
+                className="luxury-card-static p-6 bg-card rounded-2xl shadow-sm border-0"
               >
-                <h2 className="text-lg font-semibold mb-5">Current Assignments</h2>
-                <div className="space-y-3">
-                  {assignmentList.slice(0, 3).map((a) => (
-                    <div key={a.title} className="flex items-center justify-between p-4 rounded-xl bg-secondary/60 hover:bg-secondary transition-colors">
-                      <div>
-                        <p className="text-sm font-semibold">{a.title}</p>
-                        <p className="text-xs text-muted-foreground">Due: {a.dueDate}</p>
+                <div className="flex items-start justify-between mb-5 gap-2">
+                  <h2 className="text-base font-semibold flex-1 leading-tight">Current Assignments</h2>
+                  <span className="text-sm text-primary font-medium cursor-pointer shrink-0" onClick={() => setActiveTab("assignments")}>See all</span>
+                </div>
+                {assignmentList.length === 0 && <p className="text-xs text-muted-foreground p-4 bg-secondary/30 rounded-xl">No assignments posted yet.</p>}
+                <div className="space-y-4">
+                  {assignmentList.slice(0, 3).map((a, index) => (
+                     <div key={a.id} className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-xl bg-primary text-white flex items-center justify-center font-bold text-lg shadow-md shrink-0">
+                        {String(index + 1).padStart(2, '0')}
                       </div>
-                      <div className="text-right">
-                        <p className="text-sm font-bold">{a.submitted}/{a.total}</p>
-                        <div className="w-16 h-1.5 bg-border rounded-full overflow-hidden mt-1">
-                          <div className="h-full bg-foreground rounded-full" style={{ width: `${(a.submitted / a.total) * 100}%` }} />
-                        </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold truncate" title={a.title}>{a.title}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">Due: {a.dueDate}</p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-[10px] font-bold text-warning uppercase">Upcoming</p>
                       </div>
                     </div>
                   ))}
                 </div>
               </motion.div>
+            </div>
+          </motion.div>
+        )}
+
+        {activeTab === "classes" && (
+          <motion.div
+            key="classes"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="space-y-6"
+          >
+            <div className="luxury-card-static p-7">
+              <h2 className="text-lg font-semibold mb-6">Create New Class</h2>
+              <form className="flex flex-col sm:flex-row gap-4 items-end" onSubmit={handleCreateClass}>
+                <div className="space-y-1.5 flex-1 w-full">
+                  <label className="text-sm font-medium">Subject Name</label>
+                  <input
+                    className="w-full h-10 px-3 rounded-lg border border-border bg-secondary/20"
+                    placeholder="e.g. Advanced Physics"
+                    required
+                    value={newSubject}
+                    onChange={(e) => setNewSubject(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5 flex-1 w-full">
+                  <label className="text-sm font-medium">Class Group/Room</label>
+                  <input
+                    className="w-full h-10 px-3 rounded-lg border border-border bg-secondary/20"
+                    placeholder="e.g. Grade 12-B"
+                    required
+                    value={newClassName}
+                    onChange={(e) => setNewClassName(e.target.value)}
+                  />
+                </div>
+                <Button type="submit" className="w-full sm:w-auto h-10 px-8">Create</Button>
+              </form>
+            </div>
+
+            <h2 className="text-lg font-semibold mt-8 mb-4">My Created Classes</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {classes.length === 0 && <p className="text-muted-foreground text-sm col-span-full">You haven't created any classes yet.</p>}
+              {classes.map(cls => (
+                <div key={cls.id} className="luxury-card-static p-6 flex flex-col justify-between hover:border-primary/30 transition-colors">
+                  <div>
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                        <BookOpen className="w-5 h-5" />
+                      </div>
+                    </div>
+                    <h3 className="font-bold text-lg leading-tight mb-1">{cls.subject}</h3>
+                    <p className="text-sm text-muted-foreground mb-6">{cls.className}</p>
+                  </div>
+                  <Button variant="outline" className="w-full text-xs" onClick={() => { setActiveTab("attendance"); setSelectedClassId(cls.id); }}>
+                    Manage Attendance
+                  </Button>
+                </div>
+              ))}
             </div>
           </motion.div>
         )}
@@ -159,18 +708,45 @@ const TeacherDashboard = () => {
             <div className="luxury-card-static p-7">
               <h2 className="text-lg font-semibold mb-6">Pending Marks Entry</h2>
               <div className="space-y-4">
-                {pendingMarks.map((p, i) => (
-                  <div key={i} className="flex items-center justify-between p-5 rounded-xl border border-border/50 hover:border-foreground/20 transition-all">
+                {pendingSubmissions.length === 0 && <p className="text-muted-foreground text-sm p-4 bg-secondary/20 rounded-xl">No pending submissions to grade. All caught up! 🎉</p>}
+                {pendingSubmissions.map((p) => (
+                  <div key={p.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-5 rounded-xl border border-border/50 hover:border-foreground/20 transition-all gap-4">
                     <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-full bg-primary/5 flex items-center justify-center text-sm font-bold">
-                        {p.student.split(" ").map(n => n[0]).join("")}
+                      <div className="w-10 h-10 rounded-full bg-primary/5 flex items-center justify-center text-sm font-bold uppercase shrink-0">
+                        {p.studentName.split(" ").map((n: string) => n[0]).join("").substring(0, 2) || "S"}
                       </div>
                       <div>
-                        <p className="text-sm font-semibold">{p.student}</p>
-                        <p className="text-xs text-muted-foreground">{p.subject} • {p.assignment}</p>
+                        <p className="text-sm font-semibold">{p.studentName}</p>
+                        <p className="text-xs text-muted-foreground">{p.subject} • {p.assignmentTitle}</p>
+                        {p.fileUrl && (
+                          <button 
+                            onClick={() => handleDownloadFile(p.fileUrl)}
+                            className="text-[11px] text-primary hover:underline flex items-center gap-1 mt-1 font-semibold bg-transparent border-0 p-0 cursor-pointer"
+                          >
+                            <FileText className="w-3.5 h-3.5" />
+                            Download Submitted File
+                          </button>
+                        )}
                       </div>
                     </div>
-                    <Button size="sm" variant="outline">Enter Marks</Button>
+                    <div className="flex items-center gap-2 sm:shrink-0">
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        placeholder="0-100"
+                        className="w-20 h-9 px-2 rounded-lg border border-border bg-secondary/20 text-sm text-center font-medium"
+                        value={gradeInputs[p.id] || ""}
+                        onChange={(e) => setGradeInputs(prev => ({ ...prev, [p.id]: e.target.value }))}
+                      />
+                      <Button 
+                        size="sm" 
+                        onClick={() => handleGradeSubmission(p.id)}
+                        disabled={gradingId === p.id}
+                      >
+                        {gradingId === p.id ? "Saving..." : "Save"}
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -185,35 +761,119 @@ const TeacherDashboard = () => {
             animate={{ opacity: 1, scale: 1 }}
             className="space-y-6"
           >
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Active Assignments</h2>
-              <Button size="sm" onClick={() => setActiveTab("create_assignment")}>Create Assignment</Button>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {assignmentList.map((a, i) => (
-                <div key={i} className="luxury-card-static p-6 group">
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className="font-semibold">{a.title}</h3>
-                      <p className="text-xs text-muted-foreground">Mathematics • Grade 10-A</p>
-                    </div>
-                    <span className="px-2 py-1 rounded-md bg-secondary text-[10px] font-bold">ACTIVE</span>
-                  </div>
-                  <div className="space-y-3 mb-6">
-                    <div className="flex justify-between text-xs">
-                      <span className="text-muted-foreground">Submission Rate</span>
-                      <span className="font-medium">{Math.round((a.submitted / a.total) * 100)}%</span>
-                    </div>
-                    <div className="w-full h-1.5 bg-border rounded-full overflow-hidden">
-                      <div className="h-full bg-foreground" style={{ width: `${(a.submitted / a.total) * 100}%` }} />
-                    </div>
-                  </div>
-                  <Button variant="ghost" size="sm" className="w-full group-hover:bg-secondary">
-                    View Submissions <ChevronRight className="ml-1 h-3 w-3" />
+            {viewingAssignmentId ? (
+              <div className="space-y-6">
+                <div className="flex items-center gap-4">
+                  <Button variant="ghost" size="sm" onClick={() => setViewingAssignmentId(null)}>
+                    <ChevronLeft className="w-4 h-4 mr-1" />
+                    Back to Assignments
                   </Button>
                 </div>
-              ))}
-            </div>
+                
+                <div className="luxury-card-static p-7">
+                  <h2 className="text-lg font-semibold mb-6">
+                    Submissions for "{assignmentList.find(a => a.id === viewingAssignmentId)?.title}"
+                  </h2>
+                  
+                  <div className="space-y-4">
+                    {allSubmissionsList.filter(s => s.assignmentId === viewingAssignmentId).length === 0 ? (
+                      <p className="text-muted-foreground text-sm p-4 bg-secondary/20 rounded-xl">No student submissions found for this assignment yet.</p>
+                    ) : (
+                      allSubmissionsList.filter(s => s.assignmentId === viewingAssignmentId).map((s) => (
+                        <div key={s.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-5 rounded-xl border border-border/50 hover:border-foreground/20 transition-all gap-4">
+                          <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-full bg-primary/5 flex items-center justify-center text-sm font-bold uppercase shrink-0">
+                              {s.studentName.split(" ").map((n: string) => n[0]).join("").substring(0, 2) || "S"}
+                            </div>
+                            <div>
+                              <p className="text-sm font-semibold">{s.studentName}</p>
+                              <p className="text-xs text-muted-foreground">Submitted: {new Date(s.submittedAt).toLocaleDateString()}</p>
+                              {s.fileUrl && (
+                                <button 
+                                  onClick={() => handleDownloadFile(s.fileUrl)}
+                                  className="text-[11px] text-primary hover:underline flex items-center gap-1 mt-1 font-semibold bg-transparent border-0 p-0 cursor-pointer"
+                                >
+                                  <FileText className="w-3.5 h-3.5" />
+                                  Download Submitted File
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 sm:shrink-0">
+                            {s.grade !== null ? (
+                              <span className="text-sm font-bold px-3 py-1 rounded bg-green-500/10 text-green-600">
+                                Graded: {s.grade}/100
+                              </span>
+                            ) : (
+                              <>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="100"
+                                  placeholder="0-100"
+                                  className="w-20 h-9 px-2 rounded-lg border border-border bg-secondary/20 text-sm text-center font-medium"
+                                  value={gradeInputs[s.id] || ""}
+                                  onChange={(e) => setGradeInputs(prev => ({ ...prev, [s.id]: e.target.value }))}
+                                />
+                                <Button 
+                                  size="sm" 
+                                  onClick={() => handleGradeSubmission(s.id)}
+                                  disabled={gradingId === s.id}
+                                >
+                                  {gradingId === s.id ? "Saving..." : "Grade"}
+                                </Button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg font-semibold">Active Assignments</h2>
+                  <Button size="sm" onClick={() => setActiveTab("create_assignment")}>Create Assignment</Button>
+                </div>
+                {assignmentList.length === 0 && (
+                  <div className="text-center p-8 text-muted-foreground bg-secondary/20 rounded-xl">
+                    No assignments posted yet.
+                  </div>
+                )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  {assignmentList.map((a) => (
+                    <div key={a.id} className="luxury-card-static p-6 group">
+                      <div className="flex justify-between items-start mb-4">
+                        <div>
+                          <h3 className="font-semibold">{a.title}</h3>
+                          <p className="text-xs text-muted-foreground">{a.subject} • {a.className}</p>
+                        </div>
+                        <span className="px-2 py-1 rounded-md bg-secondary text-[10px] font-bold">ACTIVE</span>
+                      </div>
+                      <div className="space-y-3 mb-6">
+                        <div className="flex justify-between text-xs">
+                          <span className="text-muted-foreground">Submission Rate</span>
+                          <span className="font-medium">{Math.round((a.submitted / a.total) * 100)}%</span>
+                        </div>
+                        <div className="w-full h-1.5 bg-border rounded-full overflow-hidden">
+                          <div className="h-full bg-foreground" style={{ width: `${(a.submitted / a.total) * 100}%` }} />
+                        </div>
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="w-full group-hover:bg-secondary"
+                        onClick={() => setViewingAssignmentId(a.id)}
+                      >
+                        View Submissions <ChevronRight className="ml-1 h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </motion.div>
         )}
 
@@ -227,6 +887,20 @@ const TeacherDashboard = () => {
             <h2 className="text-lg font-semibold mb-6">Create New Assignment</h2>
             <form className="space-y-4 max-w-xl" onSubmit={handleCreateAssignment}>
               <div className="space-y-1.5">
+                <label className="text-sm font-medium">Select Class</label>
+                <select
+                  className="w-full h-10 px-3 rounded-lg border border-border bg-secondary/20 text-sm"
+                  required
+                  value={newAssignmentClassId}
+                  onChange={(e) => setNewAssignmentClassId(e.target.value)}
+                >
+                  <option value="" disabled>Choose a class</option>
+                  {classes.map(cls => (
+                    <option key={cls.id} value={cls.id}>{cls.subject} - {cls.className}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1.5">
                 <label className="text-sm font-medium">Assignment Title</label>
                 <input
                   className="w-full h-10 px-3 rounded-lg border border-border bg-secondary/20"
@@ -239,15 +913,15 @@ const TeacherDashboard = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium">PDF Document</label>
-                  <input type="file" accept=".pdf" className="w-full text-xs file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20" />
+                  <input type="file" accept=".pdf" className="w-full text-xs file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20" onChange={(e) => setAssignmentFile(e.target.files?.[0] || null)} />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium">Photo/Image</label>
-                  <input type="file" accept="image/*" className="w-full text-xs file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20" />
+                  <input type="file" accept="image/*" className="w-full text-xs file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20" onChange={(e) => setAssignmentImage(e.target.files?.[0] || null)} />
                 </div>
               </div>
               <div className="flex gap-3 pt-4">
-                <Button type="submit" className="flex-1">Post Assignment</Button>
+                <Button type="submit" className="flex-1" disabled={isUploading}>{isUploading ? "Uploading..." : "Post Assignment"}</Button>
                 <Button type="button" variant="outline" onClick={() => setActiveTab("assignments")}>Cancel</Button>
               </div>
             </form>
@@ -261,51 +935,100 @@ const TeacherDashboard = () => {
             animate={{ opacity: 1 }}
             className="space-y-6"
           >
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Mark Attendance - Grade 10-A</h2>
-              <div className="text-sm text-muted-foreground">Feb 21, 2026</div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-semibold">Daily Attendance</h2>
+                <p className="text-xs text-muted-foreground mt-1">
+                  📅 Today: <span className="font-semibold text-foreground">{new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</span>
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">Select Class:</span>
+                <select 
+                  className="h-10 px-3 rounded-lg border border-border bg-background focus:ring-2 focus:ring-primary/20 text-sm w-full sm:w-auto"
+                  value={selectedClassId}
+                  onChange={(e) => setSelectedClassId(e.target.value)}
+                >
+                  <option value="" disabled>Choose...</option>
+                  {classes.map(cls => (
+                    <option key={cls.id} value={cls.id}>{cls.subject} - {cls.className}</option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             <div className="luxury-card-static overflow-hidden">
               <div className="bg-secondary/30 p-4 border-b border-border grid grid-cols-12 text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                <div className="col-span-8 px-4">Student Name</div>
-                <div className="col-span-4 text-center px-4">Status</div>
+                <div className="col-span-7 sm:col-span-8 px-4">Student Name</div>
+                <div className="col-span-5 sm:col-span-4 text-center px-4">Status</div>
               </div>
               <div className="divide-y divide-border/50">
-                {Object.keys(attendanceRecords).map((name, i) => (
-                  <div key={i} className="grid grid-cols-12 items-center p-4 hover:bg-secondary/10 transition-colors">
-                    <div className="col-span-8 flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-primary/5 flex items-center justify-center text-[10px] font-bold">
-                        {name.split(" ").map(n => n[0]).join("")}
-                      </div>
-                      <span className="text-sm font-medium">{name}</span>
-                    </div>
-                    <div className="col-span-4 flex justify-center gap-2">
-                      <button
-                        onClick={() => toggleAttendance(name, "present")}
-                        className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all border ${attendanceRecords[name] === "present"
-                          ? "bg-green-500/20 text-green-600 border-green-500/30"
-                          : "bg-secondary text-muted-foreground border-border opacity-40 hover:opacity-100"
-                          }`}
-                      >
-                        PRESENT
-                      </button>
-                      <button
-                        onClick={() => toggleAttendance(name, "absent")}
-                        className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all border ${attendanceRecords[name] === "absent"
-                          ? "bg-red-500/20 text-red-600 border-red-500/30"
-                          : "bg-secondary text-muted-foreground border-border opacity-40 hover:opacity-100"
-                          }`}
-                      >
-                        ABSENT
-                      </button>
-                    </div>
+                {!selectedClassId && (
+                  <div className="p-12 text-center flex flex-col items-center">
+                    <GraduationCap className="w-12 h-12 text-muted-foreground/30 mb-4" />
+                    <p className="text-muted-foreground text-sm">Please select a class above to view the student register.</p>
                   </div>
-                ))}
+                )}
+                {selectedClassId && classStudents.length === 0 && (
+                  <div className="p-12 text-center flex flex-col items-center">
+                    <UserCheck className="w-12 h-12 text-muted-foreground/30 mb-4" />
+                    <p className="text-muted-foreground text-sm">No students have registered for this class yet. They will appear here in real-time as they enroll.</p>
+                  </div>
+                )}
+                
+                {classStudents.map((student) => {
+                  const status = localAttendance[student.id] || undefined;
+                  return (
+                    <div key={student.id} className="grid grid-cols-12 items-center p-4 hover:bg-secondary/10 transition-colors">
+                      <div className="col-span-7 sm:col-span-8 flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary uppercase shrink-0">
+                          {student.studentName?.split(" ").map((n: string) => n[0]).join("").substring(0, 2) || "S"}
+                        </div>
+                        <span className="text-sm font-medium truncate" title={student.studentName}>{student.studentName}</span>
+                      </div>
+                      <div className="col-span-5 sm:col-span-4 flex justify-center gap-2">
+                        <button
+                          onClick={() => handleMarkLocalAttendance(student.id, "present")}
+                          className={`px-3 py-1.5 rounded-full text-[10px] font-bold transition-all border ${status === "present"
+                            ? "bg-green-500/10 text-green-600 border-green-500/30 shadow-sm"
+                            : "bg-background text-muted-foreground border-border hover:bg-green-500/5 hover:text-green-500"
+                            }`}
+                        >
+                          PRESENT
+                        </button>
+                        <button
+                          onClick={() => handleMarkLocalAttendance(student.id, "absent")}
+                          className={`px-3 py-1.5 rounded-full text-[10px] font-bold transition-all border ${status === "absent"
+                            ? "bg-red-500/10 text-red-600 border-red-500/30 shadow-sm"
+                            : "bg-background text-muted-foreground border-border hover:bg-red-500/5 hover:text-red-500"
+                            }`}
+                        >
+                          ABSENT
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-              <div className="p-6 bg-secondary/20 border-t border-border flex justify-end">
-                <Button size="sm">Save Attendance</Button>
-              </div>
+
+              {/* Save Attendance Button */}
+              {selectedClassId && classStudents.length > 0 && (
+                <div className="p-4 border-t border-border bg-secondary/10 flex flex-col sm:flex-row items-center justify-between gap-3">
+                  <p className="text-xs text-muted-foreground">
+                    {Object.keys(localAttendance).length} of {classStudents.length} students marked.
+                    {Object.keys(localAttendance).length < classStudents.length && (
+                      <span className="text-amber-600 font-medium ml-1">Unmarked students will not be saved.</span>
+                    )}
+                  </p>
+                  <Button 
+                    onClick={handleSaveAttendance} 
+                    disabled={isSavingAttendance || Object.keys(localAttendance).length === 0}
+                    className="w-full sm:w-auto px-8"
+                  >
+                    {isSavingAttendance ? "Saving..." : "💾 Save Attendance"}
+                  </Button>
+                </div>
+              )}
             </div>
           </motion.div>
         )}
