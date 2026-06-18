@@ -23,6 +23,8 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
+import { generateStudentGrowthTips, GrowthTips } from "@/lib/gemini";
+import { BrainCircuit, Sparkles } from "lucide-react";
 
 const navItems = [
   { label: "Overview", id: "overview", icon: BarChart3 },
@@ -62,6 +64,10 @@ export default function ParentDashboard() {
 
   // Attendance filters
   const [attendanceFilter, setAttendanceFilter] = useState("all");
+
+  // AI Growth recommendation state
+  const [aiGrowthTips, setAiGrowthTips] = useState<GrowthTips | null>(null);
+  const [loadingAiTips, setLoadingAiTips] = useState(false);
 
   // Child data
   const [subjects, setSubjects] = useState<any[]>([]);
@@ -139,11 +145,17 @@ export default function ParentDashboard() {
       setSubjects([]);
       setAttendance([]);
       setNotifications([]);
+      setAiGrowthTips(null);
       return;
     }
 
     const fetchChildData = async () => {
+      // Find current child name
+      const currentChild = linkedChildren.find((c) => c.child_uid === selectedChildUid);
+      const childName = currentChild ? currentChild.child_name : "Student";
+
       // Subject performance
+      let fetchedSubjects: any[] = [];
       const { data: subData, error: subError } = await supabase
         .from("submissions")
         .select("subject, grade")
@@ -157,21 +169,23 @@ export default function ParentDashboard() {
             grouped[rec.subject].count += 1;
           }
         });
-        const arr = Object.entries(grouped).map(([name, stats]: any) => ({
+        fetchedSubjects = Object.entries(grouped).map(([name, stats]: any) => ({
           name,
           score: stats.count > 0 ? Math.round(stats.total / stats.count) : 0,
           teacher: "",
         }));
-        setSubjects(arr);
+        setSubjects(fetchedSubjects);
       }
 
       // Attendance history
+      let fetchedAttendance: any[] = [];
       const { data: attData, error: attError } = await supabase
         .from("attendance_history")
         .select("date_str, status, class_id, classes(subject, class_name)")
         .eq("student_uid", selectedChildUid)
         .order("date_str", { ascending: false });
       if (!attError && attData) {
+        fetchedAttendance = attData;
         setAttendance(attData);
       } else {
         console.error("Error fetching attendance:", attError);
@@ -186,10 +200,27 @@ export default function ParentDashboard() {
         .order("date", { ascending: false })
         .limit(10);
       if (!notifError && notifData) setNotifications(notifData);
+
+      // Generate AI Growth Tips
+      setLoadingAiTips(true);
+      try {
+        const rate = fetchedAttendance.length
+          ? Math.round(
+              (fetchedAttendance.filter((a) => a.status === "present").length / fetchedAttendance.length) * 100
+            )
+          : 100;
+        
+        const tips = await generateStudentGrowthTips(childName, fetchedSubjects, rate);
+        setAiGrowthTips(tips);
+      } catch (err) {
+        console.error("Error generating growth tips:", err);
+      } finally {
+        setLoadingAiTips(false);
+      }
     };
 
     fetchChildData();
-  }, [selectedChildUid]);
+  }, [selectedChildUid, linkedChildren]);
 
   // ==================== MESSAGING FUNCTIONS ====================
   const fetchMessages = useCallback(async () => {
@@ -603,6 +634,62 @@ export default function ParentDashboard() {
                     </div>
                   </motion.div>
                 </div>
+
+                {/* AI Growth Recommendations Card */}
+                <motion.div
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 }}
+                  className="luxury-card-static p-7 mt-6"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white">
+                        <BrainCircuit className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <h2 className="text-lg font-semibold flex items-center gap-2">
+                          AI Study Growth Recommendations
+                          <span className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 text-[10px] font-bold uppercase tracking-wider">
+                            <Sparkles className="h-3 w-3" /> Smart Coach
+                          </span>
+                        </h2>
+                        <p className="text-sm text-muted-foreground">
+                          Personalized action items based on grades and class attendance
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {loadingAiTips ? (
+                    <div className="flex flex-col items-center justify-center py-10 space-y-3">
+                      <Loader2 className="h-8 w-8 animate-spin text-indigo-500" />
+                      <p className="text-sm text-muted-foreground animate-pulse">
+                        AI is analyzing academic records and attendance compliance...
+                      </p>
+                    </div>
+                  ) : aiGrowthTips ? (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                      {aiGrowthTips.studentTips.map((tip, idx) => (
+                        <div
+                          key={idx}
+                          className="p-5 rounded-2xl bg-secondary/35 border border-border/40 hover:border-indigo-500/30 transition-all flex flex-col justify-between"
+                        >
+                          <div>
+                            <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest block mb-2">
+                              Recommendation {String(idx + 1).padStart(2, "0")}
+                            </span>
+                            <p className="text-sm text-foreground leading-relaxed">{tip}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-8">
+                      Select a child to load recommendations.
+                    </p>
+                  )}
+                </motion.div>
               </>
             )}
           </motion.div>

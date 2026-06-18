@@ -1,4 +1,4 @@
-import { BookOpen, ClipboardCheck, AlertTriangle, BarChart3, UserCheck, FileText, ChevronRight, GraduationCap, ChevronLeft } from "lucide-react";
+import { BookOpen, ClipboardCheck, AlertTriangle, BarChart3, UserCheck, FileText, ChevronRight, GraduationCap, ChevronLeft, Sparkles, BrainCircuit, Loader2 } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import StatCard from "@/components/StatCard";
 import { motion, AnimatePresence } from "framer-motion";
@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { generateStudentGrowthTips, GrowthTips } from "@/lib/gemini";
 
 const navItems = [
   { label: "Overview", id: "overview", icon: BarChart3 },
@@ -44,6 +45,11 @@ const TeacherDashboard = () => {
   const [realFlaggedStudents, setRealFlaggedStudents] = useState<any[]>([]);
   const [gradeInputs, setGradeInputs] = useState<Record<string, string>>({});
   const [gradingId, setGradingId] = useState<string | null>(null);
+
+  // AI Pedagogical Tips state
+  const [selectedFlaggedStudent, setSelectedFlaggedStudent] = useState<any | null>(null);
+  const [flaggedStudentTips, setFlaggedStudentTips] = useState<GrowthTips | null>(null);
+  const [loadingFlaggedTips, setLoadingFlaggedTips] = useState(false);
 
   const [viewingAssignmentId, setViewingAssignmentId] = useState<string | null>(null);
   const [allSubmissionsList, setAllSubmissionsList] = useState<any[]>([]);
@@ -292,6 +298,7 @@ const TeacherDashboard = () => {
           const avg = studentAverages[uid].totalScore / studentAverages[uid].count;
           if (avg < 50) {
             flagged.push({
+              id: uid,
               name: studentAverages[uid].name,
               subject: studentAverages[uid].subject,
               avg: Math.round(avg),
@@ -352,6 +359,57 @@ const TeacherDashboard = () => {
       [studentUid]: status
     }));
   };
+
+  const handleSelectFlaggedStudent = async (student: any) => {
+    setSelectedFlaggedStudent(student);
+    setLoadingFlaggedTips(true);
+    setFlaggedStudentTips(null);
+
+    try {
+      // 1. Fetch student's grades for AI prompt
+      const { data: submissions } = await supabase
+        .from("submissions")
+        .select("subject, grade")
+        .eq("student_uid", student.id);
+
+      const grouped: Record<string, { total: number; count: number }> = {};
+      if (submissions) {
+        submissions.forEach((s: any) => {
+          if (s.subject && s.grade !== null) {
+            if (!grouped[s.subject]) grouped[s.subject] = { total: 0, count: 0 };
+            grouped[s.subject].total += s.grade;
+            grouped[s.subject].count += 1;
+          }
+        });
+      }
+      const subjectsGrades = Object.entries(grouped).map(([name, stats]: any) => ({
+        name,
+        score: stats.count > 0 ? Math.round(stats.total / stats.count) : 0
+      }));
+
+      // 2. Fetch student's attendance history for AI prompt
+      const { data: attendance } = await supabase
+        .from("attendance_history")
+        .select("status")
+        .eq("student_uid", student.id);
+      
+      let rate = 100;
+      if (attendance && attendance.length > 0) {
+        const present = attendance.filter((a: any) => a.status === "present").length;
+        rate = Math.round((present / attendance.length) * 100);
+      }
+
+      // 3. Call Gemini
+      const tips = await generateStudentGrowthTips(student.name, subjectsGrades, rate);
+      setFlaggedStudentTips(tips);
+    } catch (err) {
+      console.error("Error generating tips for flagged student:", err);
+      toast.error("Failed to generate AI recommendations.");
+    } finally {
+      setLoadingFlaggedTips(false);
+    }
+  };
+
 
   const handleSaveAttendance = async () => {
     if (!selectedClassId || classStudents.length === 0) {
@@ -588,7 +646,15 @@ const TeacherDashboard = () => {
                 <div className="space-y-3">
                   {realFlaggedStudents.length === 0 && <p className="text-xs text-muted-foreground p-4 bg-secondary/30 rounded-xl">No students flagged based on current grades.</p>}
                   {realFlaggedStudents.map((s, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-4 rounded-xl bg-secondary/60 hover:bg-secondary transition-colors">
+                    <div
+                      key={idx}
+                      onClick={() => handleSelectFlaggedStudent(s)}
+                      className={`flex items-center justify-between p-4 rounded-xl transition-all cursor-pointer ${
+                        selectedFlaggedStudent?.id === s.id
+                          ? "bg-primary/10 border-l-4 border-primary"
+                          : "bg-secondary/60 hover:bg-secondary"
+                      }`}
+                    >
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-destructive/10 flex items-center justify-center">
                           <AlertTriangle className="h-3.5 w-3.5 text-destructive" />
@@ -634,8 +700,70 @@ const TeacherDashboard = () => {
                     </div>
                   ))}
                 </div>
+            {/* AI Pedagogical Recommendations Card */}
+            {selectedFlaggedStudent && (
+              <motion.div
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="luxury-card-static p-7 mt-6"
+              >
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center text-white">
+                      <BrainCircuit className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-semibold flex items-center gap-2">
+                        AI Pedagogical Strategies: {selectedFlaggedStudent.name}
+                        <span className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-purple-500/10 text-purple-600 text-[10px] font-bold uppercase tracking-wider">
+                          <Sparkles className="h-3 w-3" /> Teacher Assistant
+                        </span>
+                      </h2>
+                      <p className="text-sm text-muted-foreground">
+                        Custom intervention and support ideas generated by Gemini
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedFlaggedStudent(null)}
+                    className="self-end sm:self-auto"
+                  >
+                    Clear Selection
+                  </Button>
+                </div>
+
+                {loadingFlaggedTips ? (
+                  <div className="flex flex-col items-center justify-center py-10 space-y-3">
+                    <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
+                    <p className="text-sm text-muted-foreground animate-pulse">
+                      Analyzing student grades and attendance patterns for recommendations...
+                    </p>
+                  </div>
+                ) : flaggedStudentTips ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    {flaggedStudentTips.teacherTips.map((strategy, idx) => (
+                      <div
+                        key={idx}
+                        className="p-5 rounded-2xl bg-secondary/35 border border-border/40 hover:border-purple-500/30 transition-all flex flex-col justify-between"
+                      >
+                        <div>
+                          <span className="text-[10px] font-bold text-purple-500 uppercase tracking-widest block mb-2">
+                            Strategy {String(idx + 1).padStart(2, "0")}
+                          </span>
+                          <p className="text-sm text-foreground leading-relaxed">{strategy}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-8">
+                    Failed to load recommendations. Try again.
+                  </p>
+                )}
               </motion.div>
-            </div>
+            )}
           </motion.div>
         )}
 
