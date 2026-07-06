@@ -700,6 +700,9 @@ const TeacherDashboard = () => {
                     </div>
                   ))}
                 </div>
+              </motion.div>
+            </div>
+            
             {/* AI Pedagogical Recommendations Card */}
             {selectedFlaggedStudent && (
               <motion.div
