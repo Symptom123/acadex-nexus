@@ -145,8 +145,8 @@ const Landing = () => {
       {/* ══════════════════════════════════════
           FLOATING NAVIGATION
           ══════════════════════════════════════ */}
-      <div className="fixed top-6 left-0 right-0 z-50 flex justify-center px-4">
-        <nav className="nav-pill rounded-full px-6 py-3 flex items-center justify-between w-full max-w-4xl">
+      <div className="fixed top-4 sm:top-6 left-0 right-0 z-50 flex justify-center px-4">
+        <nav className="nav-pill rounded-full px-5 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between w-full max-w-4xl">
           <Link to="/" className="flex items-center gap-2.5">
             <img src={logoImg} alt="ACADEX" className="h-7 w-auto" />
             <span className="font-heading font-bold text-[15px] tracking-tight text-white hidden sm:block">
@@ -172,9 +172,9 @@ const Landing = () => {
             </Link>
             <button
               onClick={() => setMobileNav(!mobileNav)}
-              className="md:hidden text-white ml-2 cursor-pointer"
+              className="md:hidden text-white cursor-pointer p-1"
             >
-              {mobileNav ? <X /> : <Menu />}
+              {mobileNav ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
           </div>
         </nav>
