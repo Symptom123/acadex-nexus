@@ -160,12 +160,12 @@ const Landing = () => {
           </div>
 
           <div className="flex items-center gap-3">
-            <Link to="/login" className="hidden sm:block">
+            <Link to="/login" className="hidden md:block">
               <span className="text-sm font-medium text-white/70 hover:text-white transition-colors cursor-pointer mr-4">
                 Log in
               </span>
             </Link>
-            <Link to="/signup">
+            <Link to="/signup" className="hidden md:block">
               <Button size="sm" className="rounded-full px-6 bg-white text-black hover:bg-white/90 font-semibold cursor-pointer">
                 Get Started
               </Button>
@@ -237,7 +237,7 @@ const Landing = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.1 }}
-            className="font-heading text-5xl md:text-7xl lg:text-[90px] font-bold leading-[1.05] tracking-tighter mb-6"
+            className="font-heading text-4xl sm:text-5xl md:text-7xl lg:text-[90px] font-bold leading-[1.1] md:leading-[1.05] tracking-tighter mb-6 px-2"
           >
             Manage your school at the <br className="hidden md:block"/>
             <span className="text-gradient-hero">speed of thought.</span>
@@ -256,15 +256,15 @@ const Landing = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.3 }}
-            className="flex flex-col sm:flex-row gap-4"
+            className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto px-6 sm:px-0"
           >
-            <Link to="/signup">
-              <Button size="lg" className="rounded-full px-8 h-14 text-lg font-bold bg-white text-black hover:bg-white/90">
+            <Link to="/signup" className="w-full sm:w-auto block">
+              <Button size="lg" className="w-full rounded-full px-8 h-14 text-lg font-bold bg-white text-black hover:bg-white/90">
                 Get Started Free
               </Button>
             </Link>
-            <Link to="/login">
-              <Button size="lg" variant="outline" className="rounded-full px-8 h-14 text-lg font-bold border-white/20 bg-white/5 hover:bg-white/10 text-white">
+            <Link to="/login" className="w-full sm:w-auto block">
+              <Button size="lg" variant="outline" className="w-full rounded-full px-8 h-14 text-lg font-bold border-white/20 bg-white/5 hover:bg-white/10 text-white">
                 Sign In
               </Button>
             </Link>
@@ -334,22 +334,22 @@ const Landing = () => {
       {/* ══════════════════════════════════════
           CTA
           ══════════════════════════════════════ */}
-      <section className="py-32 px-6 relative z-10 border-t border-white/10">
-        <div className="max-w-4xl mx-auto text-center glass-panel p-12 md:p-20 relative overflow-hidden">
+      <section className="py-24 md:py-32 px-6 relative z-10 border-t border-white/10">
+        <div className="max-w-4xl mx-auto text-center glass-panel p-8 sm:p-12 md:p-20 relative overflow-hidden rounded-3xl">
           {/* Inner CTA glow */}
           <div className="absolute inset-0 bg-gradient-to-b from-primary/20 to-transparent opacity-50 pointer-events-none" />
           
-          <h2 className="font-heading text-4xl md:text-6xl font-bold mb-8 relative z-10">Ready to leap forward?</h2>
-          <p className="text-xl text-white/60 mb-10 relative z-10 max-w-2xl mx-auto">
+          <h2 className="font-heading text-3xl sm:text-4xl md:text-6xl font-bold mb-6 relative z-10">Ready to leap forward?</h2>
+          <p className="text-lg sm:text-xl text-white/60 mb-10 relative z-10 max-w-2xl mx-auto">
             Join the schools redefining education management with ACADEX.
           </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 relative z-10">
-            <Link to="/signup" className="w-full sm:w-auto">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 relative z-10 w-full">
+            <Link to="/signup" className="w-full sm:w-auto block">
               <Button size="lg" className="w-full h-14 rounded-full px-8 text-lg font-bold bg-white text-black hover:bg-white/90 cursor-pointer">
                 Get Started Free
               </Button>
             </Link>
-            <Link to="/login" className="w-full sm:w-auto">
+            <Link to="/login" className="w-full sm:w-auto block">
               <Button size="lg" variant="outline" className="w-full h-14 rounded-full px-8 text-lg font-bold border-white/20 bg-white/5 hover:bg-white/10 text-white cursor-pointer">
                 Sign In
               </Button>

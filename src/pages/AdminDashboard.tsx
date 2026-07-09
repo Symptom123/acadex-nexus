@@ -508,7 +508,7 @@ const AdminDashboard = () => {
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
-                className="glass-panel p-7"
+                className="glass-panel p-4 md:p-7"
               >
                 <h2 className="text-lg font-semibold mb-5">Active Classes</h2>
                 <div className="space-y-3">
@@ -536,7 +536,7 @@ const AdminDashboard = () => {
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
-                className="glass-panel p-7"
+                className="glass-panel p-4 md:p-7"
               >
                 <h2 className="text-lg font-semibold mb-5">Quick Actions</h2>
                 <div className="grid grid-cols-2 gap-3">
@@ -568,7 +568,7 @@ const AdminDashboard = () => {
                 <p className="text-sm text-muted-foreground">Calculating academic performance & loading records...</p>
               </div>
             ) : !selectedStudent ? (
-              <div className="glass-panel p-7">
+              <div className="glass-panel p-4 md:p-7">
                 <h2 className="text-lg font-semibold mb-6">Select Student to Generate Report</h2>
                 <div className="space-y-3">
                   {realStudentsList.length === 0 && (
@@ -621,7 +621,7 @@ const AdminDashboard = () => {
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="glass-panel p-6 border border-yellow-500/30 bg-yellow-500/5"
+                className="glass-panel p-4 md:p-6 border border-yellow-500/30 bg-yellow-500/5"
               >
                 <div className="flex items-center gap-3 mb-5">
                   <div className="w-9 h-9 rounded-xl bg-yellow-500/20 flex items-center justify-center shrink-0">
@@ -673,7 +673,7 @@ const AdminDashboard = () => {
             )}
 
             {/* ── All Users Table ── */}
-            <div className="glass-panel p-7">
+            <div className="glass-panel p-4 md:p-7">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-lg font-semibold">All Users</h2>
                 <p className="text-sm text-muted-foreground">{fetchedUsers.length} total users</p>
@@ -811,7 +811,7 @@ const AdminDashboard = () => {
             exit={{ opacity: 0, y: -10 }}
             className="space-y-6"
           >
-            <div className="glass-panel p-7">
+            <div className="glass-panel p-4 md:p-7">
               <h2 className="text-lg font-semibold mb-2">Daily Attendance Overview</h2>
               <p className="text-xs text-muted-foreground mb-6">
                 📅 Today: <span className="font-semibold text-foreground">{new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</span>
