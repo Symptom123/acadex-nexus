@@ -640,7 +640,7 @@ const TeacherDashboard = () => {
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
-                className="luxury-card-static p-6 lg:col-span-2 bg-card rounded-2xl shadow-sm border-0"
+                className="glass-panel p-6 lg:col-span-2 bg-card rounded-2xl shadow-sm border-0"
               >
                 <h2 className="text-lg font-semibold mb-5">Flagged Students</h2>
                 <div className="space-y-3">
@@ -677,7 +677,7 @@ const TeacherDashboard = () => {
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
-                className="luxury-card-static p-6 bg-card rounded-2xl shadow-sm border-0"
+                className="glass-panel p-6 bg-card rounded-2xl shadow-sm border-0"
               >
                 <div className="flex items-start justify-between mb-5 gap-2">
                   <h2 className="text-base font-semibold flex-1 leading-tight">Current Assignments</h2>
@@ -708,7 +708,7 @@ const TeacherDashboard = () => {
               <motion.div
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="luxury-card-static p-7 mt-6"
+                className="glass-panel p-7 mt-6"
               >
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                   <div className="flex items-center gap-3">
@@ -778,7 +778,7 @@ const TeacherDashboard = () => {
             exit={{ opacity: 0, y: -10 }}
             className="space-y-6"
           >
-            <div className="luxury-card-static p-7">
+            <div className="glass-panel p-7">
               <h2 className="text-lg font-semibold mb-6">Create New Class</h2>
               <form className="flex flex-col sm:flex-row gap-4 items-end" onSubmit={handleCreateClass}>
                 <div className="space-y-1.5 flex-1 w-full">
@@ -809,7 +809,7 @@ const TeacherDashboard = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {classes.length === 0 && <p className="text-muted-foreground text-sm col-span-full">You haven't created any classes yet.</p>}
               {classes.map(cls => (
-                <div key={cls.id} className="luxury-card-static p-6 flex flex-col justify-between hover:border-primary/30 transition-colors">
+                <div key={cls.id} className="glass-panel p-6 flex flex-col justify-between hover:border-primary/30 transition-colors">
                   <div>
                     <div className="flex items-start justify-between mb-2">
                       <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
@@ -836,7 +836,7 @@ const TeacherDashboard = () => {
             exit={{ opacity: 0, x: -20 }}
             className="space-y-6"
           >
-            <div className="luxury-card-static p-7">
+            <div className="glass-panel p-7">
               <h2 className="text-lg font-semibold mb-6">Pending Marks Entry</h2>
               <div className="space-y-4">
                 {pendingSubmissions.length === 0 && <p className="text-muted-foreground text-sm p-4 bg-secondary/20 rounded-xl">No pending submissions to grade. All caught up! 🎉</p>}
@@ -901,7 +901,7 @@ const TeacherDashboard = () => {
                   </Button>
                 </div>
                 
-                <div className="luxury-card-static p-7">
+                <div className="glass-panel p-7">
                   <h2 className="text-lg font-semibold mb-6">
                     Submissions for "{assignmentList.find(a => a.id === viewingAssignmentId)?.title}"
                   </h2>
@@ -975,7 +975,7 @@ const TeacherDashboard = () => {
                 )}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   {assignmentList.map((a) => (
-                    <div key={a.id} className="luxury-card-static p-6 group">
+                    <div key={a.id} className="glass-panel p-6 group">
                       <div className="flex justify-between items-start mb-4">
                         <div>
                           <h3 className="font-semibold">{a.title}</h3>
@@ -1013,7 +1013,7 @@ const TeacherDashboard = () => {
             key="create_assignment"
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            className="luxury-card-static p-7"
+            className="glass-panel p-7"
           >
             <h2 className="text-lg font-semibold mb-6">Create New Assignment</h2>
             <form className="space-y-4 max-w-xl" onSubmit={handleCreateAssignment}>
@@ -1088,7 +1088,7 @@ const TeacherDashboard = () => {
               </div>
             </div>
 
-            <div className="luxury-card-static overflow-hidden">
+            <div className="glass-panel overflow-hidden">
               <div className="bg-secondary/30 p-4 border-b border-border grid grid-cols-12 text-xs font-bold uppercase tracking-widest text-muted-foreground">
                 <div className="col-span-7 sm:col-span-8 px-4">Student Name</div>
                 <div className="col-span-5 sm:col-span-4 text-center px-4">Status</div>

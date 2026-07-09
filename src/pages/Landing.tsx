@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, useMotionValue, useTransform, useSpring } from "framer-motion";
 import { Link } from "react-router-dom";
 import {
   ArrowRight,
@@ -10,460 +10,370 @@ import {
   BookOpen,
   Brain,
   GraduationCap,
-  CheckCircle2,
-  ChevronRight,
   Zap,
   Menu,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import logoImg from "@/assets/logo.png";
-import heroBg from "@/assets/cover.png";
+import bgImg from "@/assets/background.png";
 
-/* ─── role cards for the portal section ─── */
+/* ─── Portal data for Bento Grid ─── */
 const portals = [
   {
     role: "Admin",
     icon: Shield,
-    color: "from-violet-500 to-indigo-600",
-    desc: "Full control over the entire school ecosystem.",
-    features: ["User Management", "School Analytics", "System Config"],
+    desc: "Command center for the entire school ecosystem. Complete control.",
+    className: "col-span-1 md:col-span-2 lg:col-span-2 row-span-1",
+    color: "from-blue-500/20 to-purple-500/20",
   },
   {
     role: "Teacher",
     icon: BookOpen,
-    color: "from-emerald-500 to-teal-600",
-    desc: "Manage classes, grades, and student progress.",
-    features: ["Attendance", "Assignments", "Gradebook"],
+    desc: "Gradebooks, assignments, and class management.",
+    className: "col-span-1 md:col-span-1 lg:col-span-1 row-span-1",
+    color: "from-emerald-500/20 to-teal-500/20",
   },
   {
     role: "Student",
     icon: GraduationCap,
-    color: "from-amber-500 to-orange-600",
-    desc: "Track your grades, assignments, and growth.",
-    features: ["Dashboard", "Report Cards", "Timetable"],
+    desc: "Track academic growth.",
+    className: "col-span-1 md:col-span-1 lg:col-span-1 row-span-1",
+    color: "from-orange-500/20 to-rose-500/20",
   },
   {
     role: "Parent",
     icon: Users,
-    color: "from-sky-500 to-blue-600",
-    desc: "Stay connected with your child's school life.",
-    features: ["Progress Reports", "Notifications", "Attendance"],
+    desc: "Stay connected with your child's journey.",
+    className: "col-span-1 md:col-span-2 lg:col-span-2 row-span-1",
+    color: "from-indigo-500/20 to-cyan-500/20",
   },
 ];
 
-/* ─── capabilities ─── */
+/* ─── Capabilities ─── */
 const capabilities = [
   {
+    label: "Analytics",
     icon: Brain,
-    title: "Smart Analytics",
-    desc: "AI-powered insights that predict student performance and flag those who need support before it's too late.",
+    title: "AI Predictions",
+    desc: "Flag students who need support before it's too late.",
   },
   {
+    label: "Dashboards",
     icon: BarChart3,
-    title: "Live Dashboards",
-    desc: "Real-time data visualizations for attendance, grades, and school-wide metrics — always up to date.",
+    title: "Live Metrics",
+    desc: "Always current, always clear visualizations.",
   },
   {
+    label: "Notifications",
     icon: Bell,
     title: "Instant Alerts",
-    desc: "Push notifications that keep parents, teachers, and admins in the loop the moment something matters.",
+    desc: "Keep everyone in the loop the moment it matters.",
   },
   {
+    label: "Performance",
     icon: Zap,
     title: "Lightning Fast",
-    desc: "Built for speed. Every page loads instantly, every action responds immediately. No waiting.",
+    desc: "Built for speed. Zero friction.",
   },
 ];
 
 const Landing = () => {
   const [mobileNav, setMobileNav] = useState(false);
-  const [activePortal, setActivePortal] = useState(0);
+
+  // Parallax & Cursor Setup
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+  const cursorX = useMotionValue(-500); // starts off screen
+  const cursorY = useMotionValue(-500);
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    const { clientX, clientY } = e;
+    
+    // Parallax for Hero
+    const targetX = (clientX / window.innerWidth - 0.5) * 2;
+    const targetY = (clientY / window.innerHeight - 0.5) * 2;
+    mouseX.set(targetX);
+    mouseY.set(targetY);
+
+    // Cursor Glow position
+    cursorX.set(clientX);
+    cursorY.set(clientY);
+  };
+
+  // Faster, more noticeable spring configuration for parallax
+  const springConfig = { damping: 25, stiffness: 200, mass: 0.5 };
+  const translateX = useSpring(useTransform(mouseX, [-1, 1], [80, -80]), springConfig);
+  const translateY = useSpring(useTransform(mouseY, [-1, 1], [80, -80]), springConfig);
+
+  // Smooth spring for cursor to lag slightly behind mouse for that premium feel
+  const smoothCursorX = useSpring(cursorX, { damping: 40, stiffness: 300, mass: 0.5 });
+  const smoothCursorY = useSpring(cursorY, { damping: 40, stiffness: 300, mass: 0.5 });
 
   return (
-    <div className="min-h-screen bg-transparent overflow-x-hidden relative">
-      {/* Floating moon-orbs in background */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden -z-10">
-        <div className="moon-orb moon-orb-lg top-[8%] left-[-5%] opacity-20 dark:opacity-30" />
-        <div className="moon-orb moon-orb-md top-[35%] right-[-3%] opacity-15 dark:opacity-20" />
-        <div className="moon-orb moon-orb-sm top-[60%] left-[4%] opacity-25 dark:opacity-35" />
-        <div className="moon-orb moon-orb-md top-[80%] right-[2%] opacity-15 dark:opacity-25" />
-      </div>
+    <div 
+      className="bg-background min-h-screen text-foreground selection:bg-primary/30 relative"
+      onMouseMove={handleMouseMove}
+    >
+      {/* ══════════════════════════════════════
+          CURSOR BLUE LIGHT
+          ══════════════════════════════════════ */}
+      <motion.div
+        className="pointer-events-none fixed z-0 w-[400px] h-[400px] rounded-full bg-blue-500/40 blur-[100px] mix-blend-screen"
+        style={{
+          x: smoothCursorX,
+          y: smoothCursorY,
+          translateX: "-50%",
+          translateY: "-50%",
+        }}
+      />
+      
+      {/* ══════════════════════════════════════
+          BACKGROUND GLOW ORBS
+          ══════════════════════════════════════ */}
+      <motion.div 
+        animate={{ y: [0, -40, 0], x: [0, 30, 0] }}
+        transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+        className="glow-orb bg-primary/20 w-[600px] h-[600px] top-[-200px] left-[-200px] pointer-events-none" 
+      />
+      <motion.div 
+        animate={{ y: [0, 50, 0], x: [0, -40, 0] }}
+        transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
+        className="glow-orb bg-accent/20 w-[500px] h-[500px] top-[40%] right-[-100px] pointer-events-none" 
+      />
 
-      {/* ╔═══════════════════════════════════════╗
-          ║           NAVIGATION                  ║
-          ╚═══════════════════════════════════════╝ */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-background/50 backdrop-blur-xl border-b border-border/40">
-        <div className="max-w-7xl mx-auto px-5 sm:px-8 h-16 flex items-center justify-between">
+      {/* ══════════════════════════════════════
+          FLOATING NAVIGATION
+          ══════════════════════════════════════ */}
+      <div className="fixed top-6 left-0 right-0 z-50 flex justify-center px-4">
+        <nav className="nav-pill rounded-full px-6 py-3 flex items-center justify-between w-full max-w-4xl">
           <Link to="/" className="flex items-center gap-2.5">
-            <img src={logoImg} alt="ACADEX" className="h-8 sm:h-9 w-auto" />
-            <div className="hidden sm:block">
-              <span className="font-bold text-base tracking-tight text-foreground">
-                ACADEX
-              </span>
-            </div>
+            <img src={logoImg} alt="ACADEX" className="h-7 w-auto" />
+            <span className="font-heading font-bold text-[15px] tracking-tight text-white hidden sm:block">
+              ACADEX
+            </span>
           </Link>
 
-          {/* Desktop nav links */}
           <div className="hidden md:flex items-center gap-8">
-            <a href="#portals" className="text-sm text-muted-foreground hover:text-foreground transition-colors font-medium">
-              Portals
-            </a>
-            <a href="#capabilities" className="text-sm text-muted-foreground hover:text-foreground transition-colors font-medium">
-              Features
-            </a>
-            <a href="#cta" className="text-sm text-muted-foreground hover:text-foreground transition-colors font-medium">
-              Get Started
-            </a>
+            <a href="#portals" className="text-sm font-medium text-white/70 hover:text-white transition-colors">Portals</a>
+            <a href="#features" className="text-sm font-medium text-white/70 hover:text-white transition-colors">Features</a>
           </div>
 
           <div className="flex items-center gap-3">
-            <Link to="/login">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="hidden sm:inline-flex text-sm font-medium hover:bg-secondary/80"
-              >
+            <Link to="/login" className="hidden sm:block">
+              <span className="text-sm font-medium text-white/70 hover:text-white transition-colors cursor-pointer mr-4">
                 Log in
-              </Button>
+              </span>
             </Link>
             <Link to="/signup">
-              <Button
-                size="sm"
-                className="rounded-full px-5 text-sm font-semibold bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 text-white shadow-md shadow-primary/10 hover:scale-105 active:scale-95 transition-all duration-200"
-              >
+              <Button size="sm" className="rounded-full px-6 bg-white text-black hover:bg-white/90 font-semibold cursor-pointer">
                 Get Started
               </Button>
             </Link>
             <button
               onClick={() => setMobileNav(!mobileNav)}
-              className="md:hidden p-1.5 rounded-lg hover:bg-secondary transition-colors"
+              className="md:hidden text-white ml-2 cursor-pointer"
             >
-              {mobileNav ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              {mobileNav ? <X /> : <Menu />}
             </button>
           </div>
-        </div>
+        </nav>
+      </div>
 
-        {/* Mobile nav */}
-        <AnimatePresence>
-          {mobileNav && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              className="md:hidden border-t border-border/40 bg-background/95 backdrop-blur-xl"
-            >
-              <div className="px-5 py-4 space-y-1">
-                <a href="#portals" onClick={() => setMobileNav(false)} className="block py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground">
-                  Portals
-                </a>
-                <a href="#capabilities" onClick={() => setMobileNav(false)} className="block py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground">
-                  Features
-                </a>
-                <Link to="/login" onClick={() => setMobileNav(false)} className="block py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground">
-                  Log in
-                </Link>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </nav>
-
-      {/* ╔═══════════════════════════════════════╗
-          ║           HERO SECTION                ║
-          ╚═══════════════════════════════════════╝ */}
-      <section className="relative pt-28 sm:pt-36 pb-20 sm:pb-28 px-5 sm:px-8">
-        {/* Background image */}
-        <div className="absolute inset-0 -z-10">
-          <img
-            src={heroBg}
-            alt=""
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-background/30 via-background/60 to-background" />
-        </div>
-
-        <div className="max-w-5xl mx-auto">
-          <div className="max-w-3xl">
-            {/* Badge */}
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4 }}
-              className="inline-flex items-center gap-2 bg-primary/10 text-primary px-3.5 py-1.5 rounded-full mb-6 border border-primary/20 backdrop-blur-sm"
-            >
-              <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-              <span className="text-xs font-semibold tracking-wide uppercase">
-                Now Available
-              </span>
-            </motion.div>
-
-            {/* Headline */}
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.08] mb-6"
-            >
-              Your school,{" "}
-              <span className="text-gradient">one platform.</span>
-            </motion.h1>
-
-            {/* Subheadline */}
-            <motion.p
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="text-base sm:text-lg text-muted-foreground max-w-xl leading-relaxed mb-10"
-            >
-              ACADEX connects admins, teachers, students and parents in one smart
-              hub — with real-time analytics, AI predictions, and everything your
-              school needs to thrive.
-            </motion.p>
-
-            {/* CTA buttons */}
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-              className="flex flex-wrap gap-3"
-            >
-              <Link to="/login">
-                <Button
-                  size="lg"
-                  className="h-12 px-7 text-sm font-semibold rounded-xl bg-gradient-to-r from-primary to-purple-600 hover:from-primary/95 hover:to-purple-600/95 text-white shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all duration-200"
-                >
-                  Open Dashboard
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </Link>
-              <a href="#portals">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="h-12 px-7 text-sm font-semibold rounded-xl bg-white/40 dark:bg-card/40 backdrop-blur-sm border-border hover:bg-white/60 hover:dark:bg-card/60 transition-all"
-                >
-                  Explore Portals
-                </Button>
-              </a>
-            </motion.div>
-          </div>
-
-          {/* Quick trust strip */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.6, duration: 0.5 }}
-            className="mt-16 flex flex-wrap gap-x-8 gap-y-3"
-          >
-            {["Role-based access", "AI-powered insights", "Real-time data", "Parent-teacher bridge"].map(
-              (item) => (
-                <div key={item} className="flex items-center gap-2 text-sm text-muted-foreground bg-white/30 dark:bg-card/30 backdrop-blur-sm px-3.5 py-1.5 rounded-full border border-border/40">
-                  <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0" />
-                  {item}
-                </div>
-              )
-            )}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ╔═══════════════════════════════════════╗
-          ║         PORTAL CARDS SECTION          ║
-          ╚═══════════════════════════════════════╝ */}
-      <section id="portals" className="py-20 sm:py-28 px-5 sm:px-8 scroll-mt-20">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-14">
-            <p className="text-xs font-semibold tracking-[0.2em] uppercase text-primary mb-3">
-              Four Portals
-            </p>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight mb-4">
-              One app for everyone
-            </h2>
-            <p className="text-muted-foreground max-w-lg mx-auto text-base">
-              Each role gets a tailored experience — designed for exactly what they need.
-            </p>
-          </div>
-
-          {/* Portal selector (desktop: interactive tabs, mobile: grid) */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8">
-            {portals.map((portal, i) => (
-              <button
-                key={portal.role}
-                onClick={() => setActivePortal(i)}
-                className={`relative text-left p-5 sm:p-6 rounded-2xl border transition-all duration-300 group hover:-translate-y-1 ${
-                  activePortal === i
-                    ? "border-primary/40 bg-primary/10 shadow-lg shadow-primary/5 backdrop-blur-md"
-                    : "border-border/60 bg-white/40 dark:bg-card/40 backdrop-blur-sm hover:border-primary/30 hover:bg-white/60 hover:dark:bg-card/60"
-                }`}
-              >
-                <div
-                  className={`w-10 h-10 rounded-xl bg-gradient-to-br ${portal.color} flex items-center justify-center mb-4 shadow-sm group-hover:scale-110 transition-transform duration-300`}
-                >
-                  <portal.icon className="h-5 w-5 text-white" />
-                </div>
-                <h3 className="font-bold text-base mb-1">{portal.role}</h3>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  {portal.desc}
-                </p>
-                {activePortal === i && (
-                  <motion.div
-                    layoutId="portal-indicator"
-                    className="absolute bottom-0 left-4 right-4 h-0.5 bg-primary rounded-full"
-                  />
-                )}
-              </button>
-            ))}
-          </div>
-
-          {/* Expanded detail for active portal */}
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activePortal}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.25 }}
-              className="rounded-2xl border border-border bg-white/70 dark:bg-card/70 backdrop-blur-md p-6 sm:p-8 shadow-xl"
-            >
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                  <h3 className="text-xl font-bold mb-2">
-                    {portals[activePortal].role} Portal
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {portals[activePortal].features.map((f) => (
-                      <span
-                        key={f}
-                        className="inline-flex items-center gap-1.5 bg-secondary/80 dark:bg-secondary/40 text-xs font-medium px-3 py-1.5 rounded-full"
-                      >
-                        <CheckCircle2 className="h-3 w-3 text-primary" />
-                        {f}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-                <Link to="/login">
-                  <Button
-                    size="sm"
-                    className="rounded-full px-5 font-semibold bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 text-white shadow-md hover:scale-105 active:scale-95 transition-all duration-200"
-                  >
-                    Open {portals[activePortal].role} Portal
-                    <ChevronRight className="ml-1 h-4 w-4" />
-                  </Button>
-                </Link>
-              </div>
-            </motion.div>
-          </AnimatePresence>
-        </div>
-      </section>
-
-      {/* ╔═══════════════════════════════════════╗
-          ║        CAPABILITIES SECTION           ║
-          ╚═══════════════════════════════════════╝ */}
-      <section id="capabilities" className="py-20 sm:py-28 px-5 sm:px-8 scroll-mt-20">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-14">
-            <p className="text-xs font-semibold tracking-[0.2em] uppercase text-primary mb-3">
-              Built Different
-            </p>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight mb-4">
-              Not your average school app
-            </h2>
-            <p className="text-muted-foreground max-w-lg mx-auto text-base">
-              Engineered with tools that actually make a difference.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
-            {capabilities.map((cap, i) => (
-              <motion.div
-                key={cap.title}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-50px" }}
-                transition={{ delay: i * 0.08, duration: 0.4 }}
-                className="group rounded-2xl border border-border/60 bg-white/60 dark:bg-card/60 backdrop-blur-sm hover:border-primary/30 p-6 sm:p-8 transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
-              >
-                <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center mb-5 group-hover:bg-primary group-hover:scale-110 transition-all duration-300">
-                  <cap.icon className="h-5 w-5 text-primary group-hover:text-white transition-colors" />
-                </div>
-                <h3 className="text-lg font-bold mb-2">{cap.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  {cap.desc}
-                </p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ╔═══════════════════════════════════════╗
-          ║           CTA SECTION                 ║
-          ╚═══════════════════════════════════════╝ */}
-      <section id="cta" className="py-20 sm:py-28 px-5 sm:px-8 scroll-mt-20">
+      {/* Mobile Nav Overlay */}
+      {mobileNav && (
         <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="max-w-3xl mx-auto text-center rounded-3xl border border-border/80 bg-white/80 dark:bg-card/85 backdrop-blur-md p-10 sm:p-16 shadow-2xl relative overflow-hidden"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="fixed inset-0 z-40 bg-background/95 backdrop-blur-2xl pt-28 px-6 md:hidden"
         >
-          {/* Subtle inside gradient background */}
-          <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 via-transparent to-accent/5 pointer-events-none" />
-          
-          <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-6 relative z-10">
-            <GraduationCap className="h-7 w-7 text-primary" />
-          </div>
-          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-4 relative z-10">
-            Ready to level up your school?
-          </h2>
-          <p className="text-muted-foreground text-base mb-8 max-w-md mx-auto relative z-10">
-            Join schools already using ACADEX to connect their entire community and unlock smarter education.
-          </p>
-          <div className="flex flex-wrap gap-3 justify-center relative z-10">
-            <Link to="/signup">
-              <Button
-                size="lg"
-                className="h-12 px-8 text-sm font-semibold rounded-xl bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 text-white shadow-lg shadow-primary/25 hover:scale-105 active:scale-95 transition-all duration-200"
-              >
-                Create Free Account
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </Link>
-            <Link to="/login">
-              <Button
-                variant="outline"
-                size="lg"
-                className="h-12 px-8 text-sm font-semibold rounded-xl bg-white/40 dark:bg-card/40 backdrop-blur-sm border-border hover:bg-white/60 hover:dark:bg-card/60 transition-all"
-              >
-                Sign In
+          <div className="flex flex-col gap-6 text-center">
+            <a href="#portals" onClick={() => setMobileNav(false)} className="text-2xl font-heading font-bold">Portals</a>
+            <a href="#features" onClick={() => setMobileNav(false)} className="text-2xl font-heading font-bold">Features</a>
+            <Link to="/login" onClick={() => setMobileNav(false)} className="text-2xl font-heading font-bold text-white/70">Log in</Link>
+            <Link to="/signup" onClick={() => setMobileNav(false)}>
+              <Button className="w-full rounded-full h-14 text-lg mt-4 bg-primary text-white hover:bg-primary/90">
+                Get Started Free
               </Button>
             </Link>
           </div>
         </motion.div>
+      )}
+
+      {/* ══════════════════════════════════════
+          HERO SECTION
+          ══════════════════════════════════════ */}
+      <section 
+        className="relative min-h-screen w-full flex flex-col items-center justify-center pt-24 pb-12 px-4 overflow-hidden z-10"
+      >
+        
+        {/* Background Image */}
+        <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden flex items-center justify-center">
+          <motion.img 
+            style={{ x: translateX, y: translateY }}
+            initial={{ scale: 1.1 }}
+            animate={{ scale: 1.25 }}
+            transition={{ duration: 30, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
+            src={bgImg} 
+            alt="Hero Background" 
+            className="w-full h-full object-cover opacity-40 mix-blend-screen origin-center" 
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/80 to-background" />
+        </div>
+
+        <div className="flex flex-col items-center text-center max-w-5xl mx-auto relative z-10">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-4 py-1.5 mb-8 backdrop-blur-md"
+          >
+            <span className="text-sm font-medium text-white/80">
+              The smart school platform
+            </span>
+          </motion.div>
+          
+          <motion.h1 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.1 }}
+            className="font-heading text-5xl md:text-7xl lg:text-[90px] font-bold leading-[1.05] tracking-tighter mb-6"
+          >
+            Manage your school at the <br className="hidden md:block"/>
+            <span className="text-gradient-hero">speed of thought.</span>
+          </motion.h1>
+
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="text-lg md:text-xl text-white/60 max-w-2xl font-medium mb-10"
+          >
+            Connect admins, teachers, students, and parents in one unified ecosystem powered by real-time intelligence.
+          </motion.p>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.3 }}
+            className="flex flex-col sm:flex-row gap-4"
+          >
+            <Link to="/signup">
+              <Button size="lg" className="rounded-full px-8 h-14 text-lg font-bold bg-white text-black hover:bg-white/90">
+                Get Started Free
+              </Button>
+            </Link>
+            <Link to="/login">
+              <Button size="lg" variant="outline" className="rounded-full px-8 h-14 text-lg font-bold border-white/20 bg-white/5 hover:bg-white/10 text-white">
+                Sign In
+              </Button>
+            </Link>
+          </motion.div>
+        </div>
       </section>
 
-      {/* ╔═══════════════════════════════════════╗
-          ║              FOOTER                   ║
-          ╚═══════════════════════════════════════╝ */}
-      <footer className="border-t border-border py-8 px-5 sm:px-8">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <img src={logoImg} alt="ACADEX" className="h-5 w-auto opacity-60" />
-            <span className="text-sm text-muted-foreground">
-              © {new Date().getFullYear()} ACADEX Smart School
-            </span>
+      {/* ══════════════════════════════════════
+          PORTALS (BENTO GRID)
+          ══════════════════════════════════════ */}
+      <section id="portals" className="py-32 px-6 relative z-10">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-20">
+            <h2 className="font-heading text-4xl md:text-5xl font-bold mb-6">One platform.<br/>Four perfect experiences.</h2>
+            <p className="text-white/60 text-lg max-w-2xl mx-auto">
+              Every role gets a meticulously crafted portal tailored exclusively to their needs.
+            </p>
           </div>
-          <div className="flex items-center gap-6">
-            <Link to="/login" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-              Sign In
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {portals.map((portal) => (
+              <Link to="/login" key={portal.role} className={`glass-panel p-8 md:p-10 flex flex-col justify-between group cursor-pointer ${portal.className}`}>
+                <div>
+                  <div className={`w-14 h-14 rounded-2xl mb-8 flex items-center justify-center bg-gradient-to-br ${portal.color} border border-white/10 group-hover:scale-110 transition-transform duration-500`}>
+                    <portal.icon className="h-7 w-7 text-white" />
+                  </div>
+                  <h3 className="font-heading text-2xl font-bold mb-3">{portal.role}</h3>
+                  <p className="text-white/60 leading-relaxed text-lg">{portal.desc}</p>
+                </div>
+                
+                <div className="mt-12 flex items-center text-sm font-semibold text-primary opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
+                  Explore Portal <ArrowRight className="ml-2 h-4 w-4" />
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════
+          CAPABILITIES
+          ══════════════════════════════════════ */}
+      <section id="features" className="py-32 px-6 relative z-10">
+        <div className="max-w-6xl mx-auto">
+          
+          <div className="mb-20">
+            <h2 className="font-heading text-4xl md:text-5xl font-bold mb-6">Built for performance.</h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {capabilities.map((cap) => (
+              <div key={cap.title} className="glass-panel p-8 group flex items-start gap-6">
+                <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 group-hover:border-primary/30 transition-colors">
+                  <cap.icon className="h-6 w-6 text-white/70 group-hover:text-primary transition-colors" />
+                </div>
+                <div>
+                  <div className="text-xs font-bold tracking-widest uppercase text-white/40 mb-2">{cap.label}</div>
+                  <h3 className="text-xl font-bold mb-2">{cap.title}</h3>
+                  <p className="text-white/60">{cap.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════
+          CTA
+          ══════════════════════════════════════ */}
+      <section className="py-32 px-6 relative z-10 border-t border-white/10">
+        <div className="max-w-4xl mx-auto text-center glass-panel p-12 md:p-20 relative overflow-hidden">
+          {/* Inner CTA glow */}
+          <div className="absolute inset-0 bg-gradient-to-b from-primary/20 to-transparent opacity-50 pointer-events-none" />
+          
+          <h2 className="font-heading text-4xl md:text-6xl font-bold mb-8 relative z-10">Ready to leap forward?</h2>
+          <p className="text-xl text-white/60 mb-10 relative z-10 max-w-2xl mx-auto">
+            Join the schools redefining education management with ACADEX.
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 relative z-10">
+            <Link to="/signup" className="w-full sm:w-auto">
+              <Button size="lg" className="w-full h-14 rounded-full px-8 text-lg font-bold bg-white text-black hover:bg-white/90 cursor-pointer">
+                Get Started Free
+              </Button>
             </Link>
-            <Link to="/signup" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-              Sign Up
+            <Link to="/login" className="w-full sm:w-auto">
+              <Button size="lg" variant="outline" className="w-full h-14 rounded-full px-8 text-lg font-bold border-white/20 bg-white/5 hover:bg-white/10 text-white cursor-pointer">
+                Sign In
+              </Button>
             </Link>
           </div>
         </div>
+      </section>
+
+      {/* ══════════════════════════════════════
+          FOOTER
+          ══════════════════════════════════════ */}
+      <footer className="py-12 px-6 border-t border-white/10 relative z-10">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex items-center gap-3 opacity-50">
+            <img src={logoImg} alt="ACADEX" className="h-6 w-auto" />
+            <span className="text-sm font-semibold">© {new Date().getFullYear()} ACADEX</span>
+          </div>
+          <div className="flex gap-6">
+            <Link to="/login" className="text-sm text-white/50 hover:text-white transition-colors">Login</Link>
+            <Link to="/signup" className="text-sm text-white/50 hover:text-white transition-colors">Sign up</Link>
+          </div>
+        </div>
       </footer>
+
     </div>
   );
 };

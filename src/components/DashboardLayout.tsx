@@ -56,11 +56,11 @@ const DashboardLayout = ({ children, title, role, navItems }: DashboardLayoutPro
     const baseClass = `flex items-center gap-3 px-4 py-3 rounded-xl text-[13px] font-medium transition-all duration-200 ${
       isMobile
         ? isActive
-          ? "bg-primary/10 text-primary shadow-sm font-semibold"
-          : "text-muted-foreground hover:text-foreground hover:bg-secondary/80"
+          ? "bg-primary/20 text-primary shadow-[0_0_15px_rgba(var(--primary),0.3)] font-semibold"
+          : "text-white/60 hover:text-white hover:bg-white/5"
         : isActive
-          ? "bg-white/20 text-white shadow-sm font-semibold"
-          : "text-white/70 hover:text-white hover:bg-white/10"
+          ? "bg-primary/20 text-primary shadow-[0_0_15px_rgba(var(--primary),0.3)] font-semibold"
+          : "text-white/60 hover:text-white hover:bg-white/5"
     }`;
 
     if (item.path) {
@@ -91,32 +91,38 @@ const DashboardLayout = ({ children, title, role, navItems }: DashboardLayoutPro
   };
 
   return (
-    <div className="min-h-screen bg-transparent flex">
+    <div className="min-h-screen bg-background flex relative overflow-hidden text-foreground selection:bg-primary/30">
+      {/* ══════════════════════════════════════
+          BACKGROUND GLOW ORBS
+          ══════════════════════════════════════ */}
+      <div className="glow-orb bg-primary/20 w-[600px] h-[600px] top-[-200px] left-[-200px] pointer-events-none fixed" />
+      <div className="glow-orb bg-accent/20 w-[500px] h-[500px] top-[40%] right-[-100px] pointer-events-none fixed" />
+
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex flex-col w-64 border-r-0 bg-primary text-primary-foreground p-6 print:hidden shadow-xl z-20">
-        <div className="mb-10 px-2">
+      <aside className="hidden lg:flex flex-col w-64 glass-panel m-4 mr-0 rounded-2xl border-white/10 z-20 print:hidden flex-shrink-0 relative overflow-hidden">
+        <div className="p-6 mb-6">
           <Link to="/" className="flex items-center gap-3">
             <img src="/favicon.png" alt="ACADEX Logo" className="h-[2.1rem] w-auto" />
             <span className="text-xl font-bold tracking-tight text-white">ACADEX</span>
           </Link>
         </div>
 
-        <nav className="flex-1 space-y-1">
+        <nav className="flex-1 space-y-1 px-4">
           {navItems.map((item) => renderNavItem(item, false))}
         </nav>
 
-        <div className="pt-6 border-t border-white/20 mt-4">
+        <div className="p-4 border-t border-white/10 mt-4 bg-white/5">
           <Link to="/login" onClick={handleLogout}>
-            <Button variant="ghost" size="sm" className="w-full justify-start text-white/80 hover:text-white hover:bg-white/10">
+            <Button variant="ghost" size="sm" className="w-full justify-start text-white/60 hover:text-white hover:bg-white/10">
               <LogOut className="mr-2 h-4 w-4" /> Sign Out
             </Button>
           </Link>
         </div>
       </aside>
 
-      {/* Mobile header */}
-      <div className="flex-1 flex flex-col bg-[#f4f7fe] dark:bg-background h-screen overflow-y-auto">
-        <header className="lg:hidden flex items-center justify-between p-5 border-b border-border bg-card sticky top-0 z-50 print:hidden">
+      {/* Main content */}
+      <div className="flex-1 flex flex-col h-screen overflow-y-auto relative z-10">
+        <header className="lg:hidden flex items-center justify-between p-5 border-b border-white/10 bg-background/50 backdrop-blur-xl sticky top-0 z-50 print:hidden">
           <Link to="/" className="flex items-center gap-2">
             <img src="/favicon.png" alt="ACADEX Logo" className="h-8 w-auto" />
           </Link>
@@ -131,12 +137,12 @@ const DashboardLayout = ({ children, title, role, navItems }: DashboardLayoutPro
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              className="lg:hidden border-b border-border bg-card overflow-hidden print:hidden"
+              className="lg:hidden border-b border-white/10 bg-background/95 backdrop-blur-2xl overflow-hidden print:hidden absolute w-full z-40"
             >
               <div className="p-4 space-y-1">
                 {navItems.map((item) => renderNavItem(item, true))}
                 <Link to="/login" onClick={() => { handleLogout(); setMobileOpen(false); }}>
-                  <Button variant="ghost" size="sm" className="w-full justify-start text-muted-foreground mt-2 hover:bg-secondary/85">
+                  <Button variant="ghost" size="sm" className="w-full justify-start text-white/60 mt-2 hover:bg-white/5 hover:text-white">
                     <LogOut className="mr-2 h-4 w-4" /> Sign Out
                   </Button>
                 </Link>
@@ -153,9 +159,9 @@ const DashboardLayout = ({ children, title, role, navItems }: DashboardLayoutPro
             transition={{ duration: 0.4 }}
           >
             <div className="mb-10 print:hidden">
-              <p className="text-[11px] text-muted-foreground uppercase tracking-[0.2em] font-medium mb-2">{role}</p>
-              <h1 className="text-3xl md:text-4xl font-bold tracking-tight">{title}</h1>
-              {currentUser && <p className="text-sm text-muted-foreground mt-2">Welcome, {currentUser.email}</p>}
+              <p className="text-[11px] text-primary uppercase tracking-[0.2em] font-bold mb-2">{role}</p>
+              <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white">{title}</h1>
+              {currentUser && <p className="text-sm text-white/60 mt-2">Welcome, {currentUser.email}</p>}
             </div>
             {children}
           </motion.div>

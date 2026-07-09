@@ -43,10 +43,10 @@ const ReportCard = ({ student }: ReportCardProps) => {
       </div>
 
       <div>
-        <Card className="luxury-card-static border-2 print:border-0 print:shadow-none bg-white text-black p-8 max-w-4xl mx-auto overflow-visible shadow-2xl">
-        <div className="flex justify-between items-start border-b-2 border-primary/20 pb-6 mb-8">
+        <Card className="glass-panel border-white/10 print:border-0 print:shadow-none p-8 max-w-4xl mx-auto overflow-visible shadow-2xl transition-all">
+        <div className="flex justify-between items-start border-b border-white/10 pb-6 mb-8">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-primary/10 rounded-xl flex items-center justify-center">
+            <div className="w-16 h-16 bg-primary/20 rounded-xl flex items-center justify-center border border-primary/30">
               <GraduationCap className="w-10 h-10 text-primary" />
             </div>
             <div>
@@ -54,12 +54,12 @@ const ReportCard = ({ student }: ReportCardProps) => {
                 <input
                   value={schoolName}
                   onChange={(e) => setSchoolName(e.target.value)}
-                  className="text-2xl font-bold uppercase tracking-tighter border-b border-primary/30 focus:outline-none w-full"
+                  className="text-2xl font-bold uppercase tracking-tighter border-b border-white/20 bg-transparent text-white focus:outline-none w-full focus:border-primary"
                 />
               ) : (
-                <h1 className="text-2xl font-bold uppercase tracking-tighter">{schoolName}</h1>
+                <h1 className="text-2xl font-bold uppercase tracking-tighter text-white">{schoolName}</h1>
               )}
-              <p className="text-sm text-muted-foreground uppercase tracking-widest">Official Academic Report</p>
+              <p className="text-sm text-white/50 uppercase tracking-widest mt-1">Official Academic Report</p>
             </div>
           </div>
           <div className="text-right">
@@ -68,88 +68,88 @@ const ReportCard = ({ student }: ReportCardProps) => {
                 <input
                   value={academicYear}
                   onChange={(e) => setAcademicYear(e.target.value)}
-                  className="text-sm font-bold border-b border-primary/30 focus:outline-none text-right"
+                  className="text-sm font-bold border-b border-white/20 bg-transparent text-white focus:outline-none text-right focus:border-primary"
                 />
                 <input
                   value={term}
                   onChange={(e) => setTerm(e.target.value)}
-                  className="text-xs text-muted-foreground border-b border-primary/30 focus:outline-none text-right"
+                  className="text-xs text-white/50 border-b border-white/20 bg-transparent text-white focus:outline-none text-right focus:border-primary"
                 />
               </div>
             ) : (
               <>
-                <p className="text-sm font-bold">{academicYear}</p>
-                <p className="text-xs text-muted-foreground">Term: {term}</p>
+                <p className="text-sm font-bold text-white">{academicYear}</p>
+                <p className="text-xs text-white/60">Term: {term}</p>
               </>
             )}
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-8 mb-8 bg-secondary/20 p-6 rounded-2xl">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm">
-              <User className="w-4 h-4 text-muted-foreground" />
-              <span className="font-semibold">Student Name:</span>
-              <span>{student.name}</span>
+        <div className="grid grid-cols-2 gap-8 mb-8 bg-white/5 p-6 rounded-2xl border border-white/10">
+          <div className="space-y-3">
+            <div className="flex items-center gap-3 text-sm">
+              <User className="w-4 h-4 text-white/40" />
+              <span className="font-semibold text-white/60">Student Name:</span>
+              <span className="text-white font-medium">{student.name}</span>
             </div>
-            <div className="flex items-center gap-2 text-sm">
-              <BookOpen className="w-4 h-4 text-muted-foreground" />
-              <span className="font-semibold">Student ID:</span>
-              <span>{student.id}</span>
+            <div className="flex items-center gap-3 text-sm">
+              <BookOpen className="w-4 h-4 text-white/40" />
+              <span className="font-semibold text-white/60">Student ID:</span>
+              <span className="text-white font-medium">{student.id}</span>
             </div>
           </div>
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm">
-              <GraduationCap className="w-4 h-4 text-muted-foreground" />
-              <span className="font-semibold">Grade/Section:</span>
-              <span>{student.grade}</span>
+          <div className="space-y-3">
+            <div className="flex items-center gap-3 text-sm">
+              <GraduationCap className="w-4 h-4 text-white/40" />
+              <span className="font-semibold text-white/60">Grade/Section:</span>
+              <span className="text-white font-medium">{student.grade}</span>
             </div>
-            <div className="flex items-center gap-2 text-sm">
-              <Calendar className="w-4 h-4 text-muted-foreground" />
-              <span className="font-semibold">Attendance:</span>
-              <span>{student.attendance}</span>
+            <div className="flex items-center gap-3 text-sm">
+              <Calendar className="w-4 h-4 text-white/40" />
+              <span className="font-semibold text-white/60">Attendance:</span>
+              <span className="text-white font-medium">{student.attendance}</span>
             </div>
           </div>
         </div>
 
-        <div className="mb-8">
-          <table className="w-full text-left">
+        <div className="mb-8 overflow-hidden rounded-xl border border-white/10">
+          <table className="w-full text-left bg-white/5">
             <thead>
-              <tr className="border-b-2 border-muted">
-                <th className="py-3 font-bold text-sm">Subject</th>
-                <th className="py-3 font-bold text-sm text-center">Score</th>
-                <th className="py-3 font-bold text-sm text-right">Grade</th>
+              <tr className="border-b border-white/10 bg-white/5">
+                <th className="py-3 px-4 font-bold text-sm text-white">Subject</th>
+                <th className="py-3 px-4 font-bold text-sm text-center text-white">Score</th>
+                <th className="py-3 px-4 font-bold text-sm text-right text-white">Grade</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-muted/50">
+            <tbody className="divide-y divide-white/10">
               {student.marks.map((m) => (
-                <tr key={m.subject}>
-                  <td className="py-4 text-sm font-medium">{m.subject}</td>
-                  <td className="py-4 text-sm text-center">{m.score}</td>
-                  <td className="py-4 text-sm text-right font-bold">{m.grade}</td>
+                <tr key={m.subject} className="hover:bg-white/5 transition-colors">
+                  <td className="py-4 px-4 text-sm font-medium text-white/80">{m.subject}</td>
+                  <td className="py-4 px-4 text-sm text-center text-white">{m.score}</td>
+                  <td className="py-4 px-4 text-sm text-right font-bold text-white">{m.grade}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
 
-        <div className="flex justify-between items-center bg-primary/5 p-6 rounded-2xl">
+        <div className="flex justify-between items-center bg-primary/20 p-6 rounded-2xl border border-primary/30 shadow-[0_0_30px_rgba(var(--primary),0.1)]">
           <div>
-            <p className="text-xs uppercase tracking-widest text-muted-foreground mb-1">Overall Average</p>
-            <p className="text-3xl font-bold text-primary">{student.avg}%</p>
+            <p className="text-xs uppercase tracking-widest text-primary font-semibold mb-1">Overall Average</p>
+            <p className="text-4xl font-bold text-white">{student.avg}%</p>
           </div>
           <div className="text-right">
-            <p className="text-xs uppercase tracking-widest text-muted-foreground mb-1">Status</p>
-            <p className="text-xl font-bold text-success uppercase">Promoted</p>
+            <p className="text-xs uppercase tracking-widest text-emerald-400 font-semibold mb-1">Status</p>
+            <p className="text-xl font-bold text-emerald-400 uppercase tracking-widest">Promoted</p>
           </div>
         </div>
 
         <div className="mt-12 grid grid-cols-2 gap-12 pt-8">
-          <div className="text-center border-t border-muted pt-4">
-            <p className="text-xs font-semibold uppercase">Class Teacher Signature</p>
+          <div className="text-center border-t border-white/20 pt-4">
+            <p className="text-xs font-semibold uppercase text-white/50 tracking-widest">Class Teacher Signature</p>
           </div>
-          <div className="text-center border-t border-muted pt-4">
-            <p className="text-xs font-semibold uppercase">Principal Signature</p>
+          <div className="text-center border-t border-white/20 pt-4">
+            <p className="text-xs font-semibold uppercase text-white/50 tracking-widest">Principal Signature</p>
           </div>
         </div>
       </Card>

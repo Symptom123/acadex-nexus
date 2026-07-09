@@ -1,5 +1,6 @@
-import { Users, GraduationCap, ClipboardList, UserCheck, BarChart3, ChevronLeft, BookOpen, Loader2, Edit2, Check, X, MessageSquare, Send, ChevronRight, Clock } from "lucide-react";
+import { Users, GraduationCap, ClipboardList, UserCheck, BarChart3, ChevronLeft, BookOpen, Loader2, Edit2, Check, X, MessageSquare, Send, ChevronRight, Clock, Trash2, UserX } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { ShieldCheck } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import StatCard from "@/components/StatCard";
 import ReportCard from "@/components/ReportCard";
@@ -18,7 +19,7 @@ const navItems = [
 ];
 
 const AdminDashboard = () => {
-  const { currentUser } = useAuth();
+  const { currentUser, userStatus } = useAuth();
   const [activeTab, setActiveTab] = useState("overview");
   const [selectedStudent, setSelectedStudent] = useState<any | null>(null);
   const [fetchedUsers, setFetchedUsers] = useState<any[]>([]);
@@ -54,6 +55,18 @@ const AdminDashboard = () => {
       setFetchedUsers(data);
       setTotalStudents(data.filter((u: any) => u.role === "student").length);
       setTotalTeachers(data.filter((u: any) => u.role === "teacher").length);
+
+      // If the currently logged-in admin has no status set (legacy account),
+      // stamp them as 'approved' in the DB so they are never blocked.
+      if (currentUser) {
+        const myProfile = data.find((u: any) => u.id === currentUser.uid);
+        if (myProfile && myProfile.role === "admin" && !myProfile.status) {
+          await supabase
+            .from("profiles")
+            .update({ status: "approved" })
+            .eq("id", currentUser.uid);
+        }
+      }
     }
   };
 
@@ -69,6 +82,42 @@ const AdminDashboard = () => {
 
     return () => { supabase.removeChannel(channel); };
   }, []);
+
+  const handleApproveAdmin = async (userId: string) => {
+    const { error } = await supabase
+      .from("profiles")
+      .update({ status: "approved" })
+      .eq("id", userId);
+    
+    if (error) {
+      toast.error("Failed to approve admin.");
+    } else {
+      toast.success("Admin approved successfully!");
+      fetchUsers();
+    }
+  };
+
+  const handleDeleteUser = async (userId: string, userName: string) => {
+    const confirmed = window.confirm(`Are you sure you want to delete ${userName}? This action cannot be undone.`);
+    if (!confirmed) return;
+
+    const { error } = await supabase
+      .from("profiles")
+      .delete()
+      .eq("id", userId);
+
+    if (error) {
+      toast.error("Failed to delete user.");
+    } else {
+      toast.success(`${userName} has been removed.`);
+      fetchUsers();
+    }
+  };
+
+  // An admin is pending if their status is explicitly 'pending' OR if it's null/missing
+  // (meaning the status column doesn't exist yet in Supabase or was never set)
+  const isAdminPending = (user: any) =>
+    user.role === "admin" && (user.status === "pending" || user.status === null || user.status === undefined);
 
   // Fetch classes
   useEffect(() => {
@@ -349,6 +398,82 @@ const AdminDashboard = () => {
 
   const realStudentsList = fetchedUsers.filter((u: any) => u.role === "student");
 
+  if (userStatus === "pending") {
+    return (
+      <div className="relative flex flex-col items-center justify-center min-h-screen bg-background text-foreground p-4 overflow-hidden">
+        {/* Ambient glow orbs */}
+        <div className="absolute w-[500px] h-[500px] rounded-full bg-primary/10 blur-[120px] top-[-100px] left-[-100px] pointer-events-none" />
+        <div className="absolute w-[400px] h-[400px] rounded-full bg-blue-500/10 blur-[120px] bottom-[-80px] right-[-80px] pointer-events-none" />
+
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="glass-panel p-12 flex flex-col items-center text-center max-w-lg w-full rounded-3xl relative z-10"
+        >
+          {/* Pulsing icon */}
+          <div className="relative mb-8">
+            <motion.div
+              animate={{ scale: [1, 1.15, 1], opacity: [0.3, 0.1, 0.3] }}
+              transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+              className="absolute inset-0 rounded-full bg-primary/30 blur-md"
+            />
+            <motion.div
+              animate={{ scale: [1, 1.08, 1] }}
+              transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+              className="w-24 h-24 bg-primary/10 border border-primary/20 rounded-full flex items-center justify-center"
+            >
+              <ShieldCheck className="w-12 h-12 text-primary" />
+            </motion.div>
+          </div>
+
+          <h1 className="text-3xl font-bold mb-3 font-heading">Pending Approval</h1>
+          <p className="text-muted-foreground text-sm leading-relaxed mb-8 max-w-sm">
+            Your admin account has been registered. An existing administrator needs to verify and approve your access before you can enter the portal.
+          </p>
+
+          {/* Status Steps */}
+          <div className="w-full space-y-3 mb-10">
+            {[
+              { label: "Account Created", done: true },
+              { label: "Awaiting Admin Approval", done: false, active: true },
+              { label: "Access Granted", done: false },
+            ].map((step, i) => (
+              <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-white/3 border border-white/5">
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${
+                  step.done ? "bg-green-500/20 border border-green-500/40" :
+                  step.active ? "bg-primary/20 border border-primary/40" :
+                  "bg-white/5 border border-white/10"
+                }`}>
+                  {step.done ? (
+                    <Check className="w-3.5 h-3.5 text-green-400" />
+                  ) : step.active ? (
+                    <motion.div
+                      animate={{ opacity: [1, 0.3, 1] }}
+                      transition={{ duration: 1.5, repeat: Infinity }}
+                      className="w-2 h-2 rounded-full bg-primary"
+                    />
+                  ) : (
+                    <div className="w-2 h-2 rounded-full bg-white/20" />
+                  )}
+                </div>
+                <span className={`text-sm font-medium ${
+                  step.done ? "text-green-400" :
+                  step.active ? "text-white" :
+                  "text-muted-foreground"
+                }`}>{step.label}</span>
+              </div>
+            ))}
+          </div>
+
+          <Button variant="outline" className="w-full rounded-full" onClick={() => { sessionStorage.clear(); window.location.href = "/"; }}>
+            Return to Home
+          </Button>
+        </motion.div>
+      </div>
+    );
+  }
+
   return (
     <DashboardLayout
       title={activeTab === "reports" ? "Report Generation" : "Dashboard"}
@@ -383,7 +508,7 @@ const AdminDashboard = () => {
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
-                className="luxury-card-static p-7"
+                className="glass-panel p-7"
               >
                 <h2 className="text-lg font-semibold mb-5">Active Classes</h2>
                 <div className="space-y-3">
@@ -411,7 +536,7 @@ const AdminDashboard = () => {
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
-                className="luxury-card-static p-7"
+                className="glass-panel p-7"
               >
                 <h2 className="text-lg font-semibold mb-5">Quick Actions</h2>
                 <div className="grid grid-cols-2 gap-3">
@@ -443,7 +568,7 @@ const AdminDashboard = () => {
                 <p className="text-sm text-muted-foreground">Calculating academic performance & loading records...</p>
               </div>
             ) : !selectedStudent ? (
-              <div className="luxury-card-static p-7">
+              <div className="glass-panel p-7">
                 <h2 className="text-lg font-semibold mb-6">Select Student to Generate Report</h2>
                 <div className="space-y-3">
                   {realStudentsList.length === 0 && (
@@ -491,9 +616,66 @@ const AdminDashboard = () => {
             exit={{ opacity: 0, y: -10 }}
             className="space-y-6"
           >
-            <div className="luxury-card-static p-7">
+            {/* ── Pending Admin Approvals Banner ── */}
+            {fetchedUsers.filter(u => isAdminPending(u) && u.id !== currentUser?.uid).length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="glass-panel p-6 border border-yellow-500/30 bg-yellow-500/5"
+              >
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="w-9 h-9 rounded-xl bg-yellow-500/20 flex items-center justify-center shrink-0">
+                    <ShieldCheck className="w-5 h-5 text-yellow-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-yellow-300 text-sm">Admin Approvals Required</h3>
+                    <p className="text-xs text-yellow-400/70">The following accounts are awaiting your approval to access the admin portal.</p>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  {fetchedUsers
+                    .filter(u => isAdminPending(u) && u.id !== currentUser?.uid)
+                    .map(user => (
+                      <div key={user.id} className="flex items-center justify-between p-4 rounded-xl bg-yellow-500/5 border border-yellow-500/15">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-full bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center text-xs font-bold text-yellow-400">
+                            {user.name ? user.name.split(" ").map((n: string) => n[0]).join("") : "AD"}
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold">{user.name}</p>
+                            <p className="text-xs text-muted-foreground">{user.email}</p>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            className="h-8 px-4 text-xs bg-yellow-500 hover:bg-yellow-400 text-black font-bold"
+                            onClick={() => handleApproveAdmin(user.id)}
+                          >
+                            <Check className="w-3.5 h-3.5 mr-1" />
+                            Approve
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 px-3 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                            onClick={() => handleDeleteUser(user.id, user.name)}
+                          >
+                            <X className="w-3.5 h-3.5 mr-1" />
+                            Reject
+                          </Button>
+                        </div>
+                      </div>
+                    ))
+                  }
+                </div>
+              </motion.div>
+            )}
+
+            {/* ── All Users Table ── */}
+            <div className="glass-panel p-7">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-semibold">User Management</h2>
+                <h2 className="text-lg font-semibold">All Users</h2>
                 <p className="text-sm text-muted-foreground">{fetchedUsers.length} total users</p>
               </div>
               <div className="overflow-x-auto">
@@ -502,6 +684,7 @@ const AdminDashboard = () => {
                     <tr className="border-b border-border text-muted-foreground">
                       <th className="pb-4 font-medium">Name</th>
                       <th className="pb-4 font-medium">Role</th>
+                      <th className="pb-4 font-medium">Status</th>
                       <th className="pb-4 font-medium">Email</th>
                       <th className="pb-4 font-medium text-right">Actions</th>
                     </tr>
@@ -509,12 +692,19 @@ const AdminDashboard = () => {
                   <tbody className="divide-y divide-border/50">
                     {fetchedUsers.length === 0 && (
                       <tr>
-                        <td colSpan={4} className="py-8 text-center text-muted-foreground">No users registered yet.</td>
+                        <td colSpan={5} className="py-8 text-center text-muted-foreground">No users registered yet.</td>
                       </tr>
                     )}
                     {fetchedUsers.map((user) => (
                       <tr key={user.id || user.email} className="group hover:bg-secondary/30 transition-colors">
-                        <td className="py-4 font-medium">{user.name}</td>
+                        <td className="py-4 font-medium">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
+                              {user.name ? user.name.split(" ").map((n: string) => n[0]).join("") : "??"}
+                            </div>
+                            {user.name}
+                          </div>
+                        </td>
                         <td className="py-4">
                           {editingUserId === user.id ? (
                             <select
@@ -533,41 +723,76 @@ const AdminDashboard = () => {
                             </span>
                           )}
                         </td>
-                        <td className="py-4 text-muted-foreground">{user.email}</td>
-                        <td className="py-4 text-right">
-                          {editingUserId === user.id ? (
-                            <div className="flex gap-2 justify-end">
-                              <Button
-                                size="sm"
-                                variant="default"
-                                className="h-8 w-8 p-0"
-                                onClick={() => handleSaveRole(user.id)}
-                              >
-                                <Check className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-8 w-8 p-0"
-                                onClick={() => setEditingUserId(null)}
-                              >
-                                <X className="w-4 h-4" />
-                              </Button>
-                            </div>
+                        <td className="py-4">
+                          {isAdminPending(user) ? (
+                            <span className="px-2.5 py-1 rounded-full bg-yellow-500/10 text-yellow-500 text-[11px] font-semibold uppercase tracking-wider">
+                              Pending
+                            </span>
                           ) : (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 px-3"
-                              onClick={() => {
-                                setEditingUserId(user.id);
-                                setEditingRole(user.role);
-                              }}
-                            >
-                              <Edit2 className="w-3.5 h-3.5 mr-1" />
-                              Edit
-                            </Button>
+                            <span className="px-2.5 py-1 rounded-full bg-green-500/10 text-green-500 text-[11px] font-semibold uppercase tracking-wider">
+                              Approved
+                            </span>
                           )}
+                        </td>
+                        <td className="py-4 text-muted-foreground text-xs">{user.email}</td>
+                        <td className="py-4 text-right">
+                          <div className="flex gap-2 justify-end">
+                            {isAdminPending(user) && user.id !== currentUser?.uid && (
+                              <Button
+                                variant="default"
+                                size="sm"
+                                className="h-8 px-3 text-xs"
+                                onClick={() => handleApproveAdmin(user.id)}
+                              >
+                                <Check className="w-3.5 h-3.5 mr-1" />
+                                Approve
+                              </Button>
+                            )}
+                            {editingUserId === user.id ? (
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="default"
+                                  className="h-8 w-8 p-0"
+                                  onClick={() => handleSaveRole(user.id)}
+                                >
+                                  <Check className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-8 w-8 p-0"
+                                  onClick={() => setEditingUserId(null)}
+                                >
+                                  <X className="w-4 h-4" />
+                                </Button>
+                              </>
+                            ) : (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 px-3 text-xs"
+                                onClick={() => {
+                                  setEditingUserId(user.id);
+                                  setEditingRole(user.role);
+                                }}
+                              >
+                                <Edit2 className="w-3.5 h-3.5 mr-1" />
+                                Edit
+                              </Button>
+                            )}
+                            {/* Delete button — skip current logged-in user */}
+                            {user.id !== currentUser?.uid && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0 text-red-400/60 hover:text-red-400 hover:bg-red-500/10"
+                                onClick={() => handleDeleteUser(user.id, user.name)}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -586,7 +811,7 @@ const AdminDashboard = () => {
             exit={{ opacity: 0, y: -10 }}
             className="space-y-6"
           >
-            <div className="luxury-card-static p-7">
+            <div className="glass-panel p-7">
               <h2 className="text-lg font-semibold mb-2">Daily Attendance Overview</h2>
               <p className="text-xs text-muted-foreground mb-6">
                 📅 Today: <span className="font-semibold text-foreground">{new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</span>
@@ -733,7 +958,7 @@ const AdminDashboard = () => {
             className="h-[calc(100vh-180px)] flex gap-5"
           >
             {/* Conversation list */}
-            <div className={`luxury-card-static flex flex-col ${selectedConversation ? "hidden md:flex w-72 flex-shrink-0" : "flex-1 md:flex-none md:w-80"}`}>
+            <div className={`glass-panel flex flex-col ${selectedConversation ? "hidden md:flex w-72 flex-shrink-0" : "flex-1 md:flex-none md:w-80"}`}>
               <div className="p-5 border-b border-border/50">
                 <h2 className="text-base font-semibold flex items-center gap-2">
                   <MessageSquare className="h-4 w-4" />
@@ -782,7 +1007,7 @@ const AdminDashboard = () => {
 
             {/* Conversation thread */}
             {selectedConversation ? (
-              <div className="luxury-card-static flex-1 flex flex-col min-w-0">
+              <div className="glass-panel flex-1 flex flex-col min-w-0">
                 {/* Header */}
                 <div className="p-5 border-b border-border/50 flex items-center gap-3">
                   <button

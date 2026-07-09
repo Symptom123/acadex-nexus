@@ -419,7 +419,7 @@ export default function ParentDashboard() {
   const ChildSelector = () => {
     if (acceptedChildren.length === 0) {
       return (
-        <div className="mb-8 luxury-card-static p-5 flex items-center gap-4 border-dashed border-2 border-primary/20">
+        <div className="mb-8 glass-panel p-5 flex items-center gap-4 border-dashed border-2 border-primary/20">
           <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
             <UserPlus className="h-5 w-5 text-primary" />
           </div>
@@ -441,7 +441,7 @@ export default function ParentDashboard() {
     }
 
     return (
-      <div className="mb-8 luxury-card-static p-4 flex items-center gap-4">
+      <div className="mb-8 glass-panel p-4 flex items-center gap-4">
         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-indigo-500 flex items-center justify-center text-sm font-bold text-white">
           {selectedChild?.child_name?.charAt(0) ?? "?"}
         </div>
@@ -558,7 +558,7 @@ export default function ParentDashboard() {
                     initial={{ opacity: 0, y: 15 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3 }}
-                    className="luxury-card-static p-7"
+                    className="glass-panel p-7"
                   >
                     <h2 className="text-lg font-semibold mb-5">Subject Performance</h2>
                     <div className="space-y-3">
@@ -596,7 +596,7 @@ export default function ParentDashboard() {
                     initial={{ opacity: 0, y: 15 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.4 }}
-                    className="luxury-card-static p-7"
+                    className="glass-panel p-7"
                   >
                     <h2 className="text-lg font-semibold mb-5">Recent Notifications</h2>
                     <div className="space-y-3">
@@ -640,7 +640,7 @@ export default function ParentDashboard() {
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.5 }}
-                  className="luxury-card-static p-7 mt-6"
+                  className="glass-panel p-7 mt-6"
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                     <div className="flex items-center gap-3">
@@ -704,7 +704,7 @@ export default function ParentDashboard() {
           >
             <ChildSelector />
             {selectedChildUid ? (
-              <div className="luxury-card-static p-7">
+              <div className="glass-panel p-7">
                 <h2 className="text-lg font-semibold mb-6">Detailed Performance Analysis</h2>
                 <div className="space-y-6">
                   {subjects.length === 0 && (
@@ -753,14 +753,14 @@ export default function ParentDashboard() {
               <div className="space-y-6">
                 {/* Stats Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-                  <div className="luxury-card-static p-6 text-center">
+                  <div className="glass-panel p-6 text-center">
                     <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider mb-2">
                       Attendance Rate
                     </p>
                     <p className="text-4xl font-extrabold text-primary mb-1">{attendanceRate}%</p>
                     <p className="text-xs text-muted-foreground">Overall compliance</p>
                   </div>
-                  <div className="luxury-card-static p-6 text-center">
+                  <div className="glass-panel p-6 text-center">
                     <p className="text-xs text-green-600 font-semibold uppercase tracking-wider mb-2">
                       Days Present
                     </p>
@@ -769,7 +769,7 @@ export default function ParentDashboard() {
                     </p>
                     <p className="text-xs text-muted-foreground">Out of {attendance.length} total sessions</p>
                   </div>
-                  <div className="luxury-card-static p-6 text-center">
+                  <div className="glass-panel p-6 text-center">
                     <p className="text-xs text-red-500 font-semibold uppercase tracking-wider mb-2">
                       Days Absent
                     </p>
@@ -781,7 +781,7 @@ export default function ParentDashboard() {
                 </div>
 
                 {/* Daily Record Log */}
-                <div className="luxury-card-static p-7">
+                <div className="glass-panel p-7">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                     <div>
                       <h2 className="text-lg font-semibold">Daily Attendance Log</h2>
@@ -891,7 +891,7 @@ export default function ParentDashboard() {
             className="space-y-6"
           >
             {/* Send link request card */}
-            <div className="luxury-card-static p-7">
+            <div className="glass-panel p-7">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-indigo-500 flex items-center justify-center">
                   <UserPlus className="h-5 w-5 text-white" />
@@ -937,7 +937,7 @@ export default function ParentDashboard() {
             </div>
 
             {/* Linked children list */}
-            <div className="luxury-card-static p-7">
+            <div className="glass-panel p-7">
               <div className="flex items-center gap-3 mb-6">
                 <Users className="h-5 w-5 text-muted-foreground" />
                 <h2 className="text-lg font-semibold">Linked Children</h2>
@@ -1024,7 +1024,7 @@ export default function ParentDashboard() {
             className="space-y-6"
           >
             {/* Compose new message card */}
-            <div className="luxury-card-static p-7">
+            <div className="glass-panel p-7">
               <div className="flex items-center gap-3 mb-5">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-indigo-500 flex items-center justify-center">
                   <Send className="h-5 w-5 text-white" />
@@ -1072,7 +1072,7 @@ export default function ParentDashboard() {
             </div>
 
             {/* Conversation thread */}
-            <div className="luxury-card-static p-7">
+            <div className="glass-panel p-7">
               <div className="flex items-center gap-3 mb-6">
                 <MessageSquare className="h-5 w-5 text-muted-foreground" />
                 <h2 className="text-lg font-semibold">Conversation</h2>

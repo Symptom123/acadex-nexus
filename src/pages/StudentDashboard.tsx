@@ -529,7 +529,7 @@ const StudentDashboard = () => {
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
-                className="luxury-card-static p-7"
+                className="glass-panel p-7"
               >
                 <h2 className="text-lg font-semibold mb-6">Performance Trend</h2>
                 {performanceData.length === 0 ? (
@@ -567,7 +567,7 @@ const StudentDashboard = () => {
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
-                className="luxury-card-static p-7"
+                className="glass-panel p-7"
               >
                 <h2 className="text-lg font-semibold mb-5">Subject Scores</h2>
                 {subjectScores.length === 0 ? (
@@ -621,7 +621,7 @@ const StudentDashboard = () => {
               {allClasses.map((cls) => {
                 const isEnrolled = enrolledClassIds.includes(cls.id);
                 return (
-                  <div key={cls.id} className="luxury-card-static p-6 flex flex-col justify-between hover:border-primary/30 transition-colors">
+                  <div key={cls.id} className="glass-panel p-6 flex flex-col justify-between hover:border-primary/30 transition-colors">
                     <div>
                       <div className="flex items-start justify-between mb-4">
                         <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
@@ -658,7 +658,7 @@ const StudentDashboard = () => {
             key="results"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="luxury-card-static p-7"
+            className="glass-panel p-7"
           >
             <h2 className="text-lg font-semibold mb-6">Academic Results</h2>
             {subjectScores.length === 0 ? (
@@ -690,7 +690,7 @@ const StudentDashboard = () => {
             key="attendance"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="luxury-card-static p-7"
+            className="glass-panel p-7"
           >
             <h2 className="text-lg font-semibold mb-6">Attendance History</h2>
             <div className="flex items-center gap-8 mb-8 p-6 bg-secondary/30 rounded-2xl">
@@ -746,7 +746,7 @@ const StudentDashboard = () => {
                 const isSubmitted = submittedAssignmentIds.includes(a.id);
                 const isGraded = submission && submission.grade !== null;
                 return (
-                  <div key={a.id} className="luxury-card-static p-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                  <div key={a.id} className="glass-panel p-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div>
                       <h3 className="font-semibold text-lg">{a.title}</h3>
                       <p className="text-sm text-muted-foreground">{a.subject} • {a.className} • Due: {a.dueDate}</p>
@@ -825,7 +825,7 @@ const StudentDashboard = () => {
             className="space-y-6"
           >
             {/* Info banner */}
-            <div className="luxury-card-static p-6 flex items-center gap-4">
+            <div className="glass-panel p-6 flex items-center gap-4">
               <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                 <Users className="h-5 w-5 text-primary" />
               </div>
@@ -839,7 +839,7 @@ const StudentDashboard = () => {
 
             {/* Pending requests */}
             {parentRequests.filter(r => r.status === "pending").length > 0 && (
-              <div className="luxury-card-static p-6">
+              <div className="glass-panel p-6">
                 <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
                   <Clock className="h-4 w-4" />
                   Pending Requests
@@ -893,7 +893,7 @@ const StudentDashboard = () => {
 
             {/* Accepted parents */}
             {parentRequests.filter(r => r.status === "accepted").length > 0 && (
-              <div className="luxury-card-static p-6">
+              <div className="glass-panel p-6">
                 <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
                   <Check className="h-4 w-4 text-green-600" />
                   Linked Parents
@@ -927,7 +927,7 @@ const StudentDashboard = () => {
 
             {/* Rejected requests */}
             {parentRequests.filter(r => r.status === "rejected").length > 0 && (
-              <div className="luxury-card-static p-6">
+              <div className="glass-panel p-6">
                 <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
                   <X className="h-4 w-4 text-red-500" />
                   Rejected Requests
